@@ -1,0 +1,8 @@
+# environment file
+.env
+
+# data
+/data/events.json
+
+# dependencies
+/node_modules
