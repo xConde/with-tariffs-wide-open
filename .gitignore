@@ -4,5 +4,8 @@
 # data
 /data/events.json
 
+# compiled output
+/dist
+
 # dependencies
 /node_modules
