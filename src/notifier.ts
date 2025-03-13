@@ -83,7 +83,7 @@ export async function scheduleNotifications(): Promise<void> {
             const msg = await sendNotificationEmbed(embed);
             setTimeout(async () => {
               updateCalendarAlert(msg, groupEvents);
-            }, 75000);
+            }, 80000);
           } else {
             const embed = buildNotificationEmbed(windowMinutes, groupEvents);
             sendNotificationEmbed(embed);
@@ -109,11 +109,14 @@ async function updateCalendarAlert(msg: Message<boolean> | null, groupEvents: Ca
       evtTime.setSeconds(0, 0);
       return evtTime.toISOString() === groupKey;
     });
-    const updatedEmbed = buildUpdatedNotificationEmbed(updatedGroupEvents);
+    console.log("Updated group events:", updatedGroupEvents);
+
+    const embedToUse = buildUpdatedNotificationEmbed(updatedGroupEvents.length > 0 ? updatedGroupEvents : groupEvents);
     if (msg && typeof msg.edit === "function") {
-      await msg.edit({ embeds: [updatedEmbed] });
+      await msg.edit({ embeds: [embedToUse] });
     }
-    if (scrapedEvents.length > 0) {
+
+    if (scrapedEvents.length > 0 && updatedGroupEvents.length > 0) {
       await saveEvents(scrapedEvents);
       await refreshNotifications();
       console.log('Events updated and notifications refreshed.');
