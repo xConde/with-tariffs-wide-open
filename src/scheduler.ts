@@ -3,17 +3,19 @@ import { scrapeEconomicCalendar } from './scraper';
 import { saveEvents } from './storage';
 import { refreshNotifications } from './notifier';
 
-cron.schedule('0 3 * * *', async () => {
+async function updateCalendarEvents(): Promise<void> {
   try {
     const events = await scrapeEconomicCalendar();
     if (events.length > 0) {
       await saveEvents(events);
       await refreshNotifications();
-      console.log('Daily scrape successful.');
+      console.log('Events updated and notifications refreshed.');
     } else {
-      console.log('Daily scrape returned no events.');
+      console.log('Scrape returned no events.');
     }
   } catch (error) {
-    console.error('Error during daily scrape:', error);
+    console.error('Error during scheduled update:', error);
   }
-});
+}
+
+cron.schedule('0 3 * * *', updateCalendarEvents);
