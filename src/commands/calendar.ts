@@ -40,19 +40,33 @@ function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]
   return map;
 }
 
+function getEventDetails(evt: CalendarEvent): string {
+  const details: string[] = [];
+  if (evt.actual?.trim()) {
+    details.push(`A: ${evt.actual.trim()}`);
+  }
+  if (evt.forecast?.trim()) {
+    details.push(`F: ${evt.forecast.trim()}`);
+  }
+  if (evt.previous?.trim()) {
+    details.push(`P: ${evt.previous.trim()}`);
+  }
+  return details.join(' | ');
+}
+
 function buildDateBlocks(grouped: Map<string, CalendarEvent[]>): string[] {
-  const sortedDates = Array.from(grouped.keys()).sort((a, b) => {
-    const da = parseDateHeader(a).getTime();
-    const db = parseDateHeader(b).getTime();
-    return da - db;
-  });
+  const sortedDates = Array.from(grouped.keys()).sort(
+    (a, b) => parseDateHeader(a).getTime() - parseDateHeader(b).getTime()
+  );
   const blocks: string[] = [];
   for (const dateHeading of sortedDates) {
     const evts = grouped.get(dateHeading) || [];
     let block = `**${dateHeading}**\n`;
     for (const evt of evts) {
-      const details = `A: ${evt.actual ?? 'N/A'} | F: ${evt.forecast ?? 'N/A'} | P: ${evt.previous ?? 'N/A'}`;
-      block += `• **${evt.time}** - ${evt.title} (${details})\n`;
+      const details = getEventDetails(evt);
+      block += details 
+        ? `• **${evt.time}** - ${evt.title} (${details})\n`
+        : `• **${evt.time}** - ${evt.title}\n`;
     }
     blocks.push(block.trim());
   }
