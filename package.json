@@ -4,7 +4,7 @@
   "scripts": {
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "node dist/deploy-commands.js && node dist/index.js"
+    "start": "node --max-old-space-size=2048 dist/deploy-commands.js && node --max-old-space-size=2048 dist/index.js"
   },
   "engines": {
     "node": ">=18.0.0"
