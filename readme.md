@@ -1,15 +1,17 @@
 # Economic Calendar Discord Bot `with-tariffs-wide-open`
 
-This project is a Discord bot that scrapes economic calendar events from [MarketWatch](https://www.marketwatch.com/economy-politics/calendar) and displays them via a slash command in a mobile-friendly, multi-page grid embed. Events are grouped by date and only upcoming events are shown. A daily scheduler automatically updates the event data, and a fallback re-scrape is performed if no data is found when a command is used.
+This project is a Discord bot that scrapes economic calendar events from [MarketWatch](https://www.marketwatch.com/economy-politics/calendar) and displays them via a slash command in a mobile-friendly, multi-page embed. Events are grouped by date and only upcoming events are shown. A daily scheduler automatically updates the event data, and a fallback re-scrape is performed if no data is found when a command is used.
 
 ## Features
 
-- **Daily Data Update:** Uses a cron job (via `node-cron`) to scrape and store events once a day.
-- **Fallback Re-scrape:** If no stored data exists when the `/calendar` command is used, the bot will attempt to re-scrape the latest events.
-- **Grouped Display:** Events are grouped by date so that repeated date headings are consolidated.
-- **Mobile-Friendly Layout:** Uses Discord embed inline fields (instead of ASCII tables) to display event data in a grid-like, professional format.
-- **Pagination:** Supports “Previous” and “Next” buttons for navigating multiple pages of events.
-- **User-Agent Rotation:** The scraper rotates among a small set of realistic browser user agents to reduce the chance of being blocked.
+- **Daily Data Update:** A cron job (via `node-cron`) scrapes and stores events once a day.
+- **Fallback Re-scrape:** If no stored data exists when the `/calendar` command is invoked, the bot will re-scrape the latest events.
+- **Grouped & Paginated Display:** Events are grouped by date so that repeated date headings are consolidated. The bot displays the events in multi-page embeds with “Previous” and “Next” buttons for easy navigation.
+- **Responsive Notification Updates:** The bot sends scheduled notifications 30 minutes and 1 minute before events. The 1-minute alert is updated after the event starts, pulling updated data (including actual values) and displaying performance indicators (e.g., “↑ Higher” or “↓ Lower”).
+- **User-Agent Rotation:** The scraper rotates among a pool of realistic browser user agents to reduce the risk of being blocked.
+- **Fake Date Support for Testing:** You can simulate a different current date by setting the `FAKE_DATE` environment variable.
+- **Optimized & Modularized Code:** Refactored for long-term stability and maintainability, with clear separation of concerns across modules.
+
 
 ## Technologies Used
 
@@ -36,11 +38,16 @@ This project is a Discord bot that scrapes economic calendar events from [Market
 
     In the project root, create a file named .env and add the following (replace placeholder values with your actual Discord credentials):
    ```bash
-   DISCORD_TOKEN=your_discord_bot_token
-   DISCORD_CHANNEL_ID=your_discord_channel_id
+      DISCORD_TOKEN=your_discord_bot_token
+      DISCORD_CHANNEL_ID=your_discord_channel_id
+      CLIENT_ID=your_client_id
+      # Optional: Set a fake date for testing (in ISO 8601 format, EST-based)
+      FAKE_DATE=2025-03-17T07:28:58.000Z
+      # Optional: Set RESCRAPE=1 to manually force a data update on startup
+      RESCRAPE=0
 4. **Build/Run the Bot**: You can run the bot using:
    ```bash
-   npx ts-node src/index.ts
+   npm run start
    ```
    The bot will log in to Discord, start the daily scheduler, and listen for slash command interactions.
 
@@ -65,14 +72,15 @@ Contains the scraper logic (using axios and cheerio) with rotating user agents t
 `src/storage.ts`:
 Provides functions for reading from and writing to the local JSON file where scraped event data is stored.
 
-`src/scheduler.ts`:
-(Optional) Contains a cron job to automatically update event data daily.
+`src/scheduler.ts`: Contains the cron job for daily event updates.
 
 `src/notifier.ts`: Schedules and sends notifications for upcoming events.
 
-`src/notifierMessage.ts`: Contains functions to build and send Discord embeds for notifications.
+`src/globalSetup.ts`: Handles global initialization tasks (e.g., setting fake dates, validating environment variables, and handling unhandled rejections).
 
 `src/commands/calendar.ts`:
 Implements the /calendar command. This module groups events by date, builds multi-page embeds with inline fields, and sets up pagination buttons.
 
-`src/models/event.ts`: Defines the Event interface.
+`src/events/notifierMessage.ts`: Contains functions to build and send Discord embeds for notifications.
+
+`src/models/event.ts`: Defines the `CalendarEvent` interface.
