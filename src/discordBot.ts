@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, TextChannel, Interaction, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { Client, GatewayIntentBits, TextChannel, Interaction, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Message } from 'discord.js';
 import 'dotenv/config';
 import { calendarCommand, buildCalendarEmbed } from './commands/calendar';
 
@@ -13,6 +13,17 @@ export async function sendDiscordAlert(message: string): Promise<void> {
   const channel = await discordClient.channels.fetch(CHANNEL_ID) as TextChannel;
   if (channel) {
     await channel.send(message);
+  }
+}
+
+export async function sendEmbed(embed: EmbedBuilder): Promise<Message | null> {
+  try {
+    const channel = await discordClient.channels.fetch(CHANNEL_ID) as TextChannel;
+    if (!channel || !channel.isTextBased()) return null;
+    return await channel.send({ embeds: [embed] });
+  } catch (error) {
+    console.error('Error sending notification embed:', error);
+    return null;
   }
 }
 

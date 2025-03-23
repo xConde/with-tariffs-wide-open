@@ -3,7 +3,7 @@ import { scrapeEconomicCalendar } from './scraper';
 import { saveEvents } from './storage';
 import { refreshNotifications } from './notifier';
 
-async function updateCalendarEvents(): Promise<void> {
+export async function updateCalendarEvents(): Promise<void> {
   try {
     const events = await scrapeEconomicCalendar();
     if (events.length > 0) {
