@@ -13,6 +13,9 @@ This project is a Discord bot that scrapes economic calendar events from [Market
 - **Optimized & Modularized Code:** Refactored for long-term stability and maintainability, with clear separation of concerns across modules.
 
 
+[![Watch the video](https://img.youtube.com/vi/MVBy7bKlqaU/maxresdefault.jpg)](https://www.youtube.com/watch?v=MVBy7bKlqaU)
+
+
 ## Technologies Used
 
 - [Node.js](https://nodejs.org/)
