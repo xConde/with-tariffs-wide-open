@@ -100,7 +100,7 @@ export async function scheduleNotifications(): Promise<void> {
             const msg = await sendEmbed(embed);
             setTimeout(async () => {
               await updateCalendarAlert(msg, groupEvents);
-            }, 75000);
+            }, 90000);
           } else {
             const embed = buildNotificationEmbed(windowMinutes, groupEvents);
             await sendEmbed(embed);
