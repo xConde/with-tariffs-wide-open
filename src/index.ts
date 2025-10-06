@@ -1,7 +1,8 @@
 import './globalSetup';
 import { waitForInitialSetup } from './globalSetup';
 import { initializeDiscordBot } from './discordBot';
-import './scheduler';
+import { startScheduler } from './scheduler';
+import { initializeNotifications } from './notifier';
 import { schedulePeriodicCleanup } from './utils/cacheCleanup';
 import { setupGracefulShutdown, registerCleanupHandler } from './utils/shutdown';
 import { startHeartbeat, stopHeartbeat } from './utils/healthCheck';
@@ -24,6 +25,11 @@ async function startApp() {
       process.env.DISCORD_CHANNEL_ID || '',
       process.env.FALLBACK_CHANNEL_ID
     );
+
+    startScheduler();
+
+    await initializeNotifications();
+    console.log('Notifications scheduled');
 
     cleanupInterval = schedulePeriodicCleanup();
     registerCleanupHandler(() => {

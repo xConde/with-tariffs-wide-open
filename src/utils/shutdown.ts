@@ -1,4 +1,4 @@
-import { discordClient } from '../discordBot';
+import { discordClient } from '../core/discordClient';
 
 let isShuttingDown = false;
 const cleanupHandlers: Array<() => void | Promise<void>> = [];

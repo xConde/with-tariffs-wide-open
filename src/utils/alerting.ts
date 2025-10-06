@@ -1,4 +1,4 @@
-import { discordClient } from '../discordBot';
+import { discordClient } from '../core/discordClient';
 import { EmbedBuilder } from 'discord.js';
 
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;

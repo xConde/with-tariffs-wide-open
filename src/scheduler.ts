@@ -2,12 +2,9 @@ import cron from 'node-cron';
 import { scrapeEconomicCalendar } from './scraper';
 import { saveEvents } from './storage';
 import { refreshNotifications } from './notifier';
-import { DAILY_SCRAPE_SCHEDULE } from './config/constants';
+import { DAILY_SCRAPE_SCHEDULE, SCRAPER_MAX_RETRIES, SCRAPER_RETRY_DELAY_MS } from './config/constants';
 import { sendScraperFailureAlert } from './utils/alerting';
 import { shouldAcceptScrapedData } from './utils/dataValidation';
-
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 60000; // 1 minute
 
 async function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -16,9 +13,9 @@ async function delay(ms: number): Promise<void> {
 export async function updateCalendarEvents(): Promise<void> {
   let lastError: Error | null = null;
 
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+  for (let attempt = 1; attempt <= SCRAPER_MAX_RETRIES; attempt++) {
     try {
-      console.log(`Scraping calendar events (attempt ${attempt}/${MAX_RETRIES})...`);
+      console.log(`Scraping calendar events (attempt ${attempt}/${SCRAPER_MAX_RETRIES})...`);
       const events = await scrapeEconomicCalendar();
 
       if (events.length > 0 && shouldAcceptScrapedData(events)) {
@@ -35,20 +32,26 @@ export async function updateCalendarEvents(): Promise<void> {
       }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`Error during scheduled update (attempt ${attempt}/${MAX_RETRIES}):`, error);
+      console.error(`Error during scheduled update (attempt ${attempt}/${SCRAPER_MAX_RETRIES}):`, error);
 
-      if (attempt < MAX_RETRIES) {
-        console.log(`Retrying in ${RETRY_DELAY_MS / 1000} seconds...`);
-        await delay(RETRY_DELAY_MS);
+      if (attempt < SCRAPER_MAX_RETRIES) {
+        console.log(`Retrying in ${SCRAPER_RETRY_DELAY_MS / 1000} seconds...`);
+        await delay(SCRAPER_RETRY_DELAY_MS);
       }
     }
   }
 
-  console.error(`Failed to update calendar after ${MAX_RETRIES} attempts. Last error:`, lastError);
+  console.error(`Failed to update calendar after ${SCRAPER_MAX_RETRIES} attempts. Last error:`, lastError);
 
   if (lastError) {
-    await sendScraperFailureAlert(MAX_RETRIES, lastError);
+    await sendScraperFailureAlert(SCRAPER_MAX_RETRIES, lastError);
   }
 }
 
-cron.schedule(DAILY_SCRAPE_SCHEDULE, updateCalendarEvents);
+/**
+ * Starts the daily scraper scheduler
+ */
+export function startScheduler(): void {
+  cron.schedule(DAILY_SCRAPE_SCHEDULE, updateCalendarEvents);
+  console.log(`Daily scraper scheduled (cron: ${DAILY_SCRAPE_SCHEDULE})`);
+}

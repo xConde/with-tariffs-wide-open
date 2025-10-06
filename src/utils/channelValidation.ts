@@ -1,4 +1,4 @@
-import { discordClient } from '../discordBot';
+import { discordClient } from '../core/discordClient';
 import { ChannelType, PermissionFlagsBits, TextChannel } from 'discord.js';
 
 interface ChannelCheckResult {

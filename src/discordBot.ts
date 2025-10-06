@@ -1,19 +1,18 @@
-import { Client, GatewayIntentBits, TextChannel, Interaction, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Message } from 'discord.js';
+import { TextChannel, Interaction, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Message } from 'discord.js';
 import 'dotenv/config';
+import { discordClient } from './core/discordClient';
 import { calendarCommand, buildCalendarEmbed } from './commands/calendar';
 import { sendHealthAlert } from './utils/alerting';
+
+import { MAX_RECONNECT_ATTEMPTS, RECONNECT_BASE_DELAY_MS } from './config/constants';
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN || 'YOUR_DISCORD_TOKEN';
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || 'YOUR_CHANNEL_ID';
 const FALLBACK_CHANNEL_ID = process.env.FALLBACK_CHANNEL_ID;
 
 let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 5;
-const RECONNECT_DELAY_MS = 5000;
 
-export const discordClient = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
-});
+export { discordClient };
 
 export async function sendDiscordAlert(message: string): Promise<void> {
   const channel = await discordClient.channels.fetch(CHANNEL_ID) as TextChannel;
@@ -65,7 +64,7 @@ async function attemptReconnect(): Promise<void> {
   }
 
   reconnectAttempts++;
-  const delay = RECONNECT_DELAY_MS * reconnectAttempts;
+  const delay = RECONNECT_BASE_DELAY_MS * reconnectAttempts;
 
   console.log(`Attempting to reconnect to Discord (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}) in ${delay / 1000}s...`);
 

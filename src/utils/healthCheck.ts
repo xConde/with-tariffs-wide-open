@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_MAX_AGE_MS } from '../config/constants';
 
 const HEARTBEAT_FILE = path.join(__dirname, '../../heartbeat.txt');
-const HEARTBEAT_INTERVAL_MS = 60000; // 1 minute
 
 let heartbeatInterval: NodeJS.Timeout | null = null;
 
@@ -59,8 +59,8 @@ export async function checkHealth(): Promise<{ healthy: boolean; lastHeartbeat?:
     const heartbeat = JSON.parse(data);
     const age = Date.now() - heartbeat.timestamp;
 
-    // Healthy if heartbeat within last 2 minutes
-    const healthy = age < 120000;
+    // Healthy if heartbeat within configured max age
+    const healthy = age < HEARTBEAT_MAX_AGE_MS;
 
     return {
       healthy,

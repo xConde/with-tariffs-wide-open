@@ -172,4 +172,9 @@ export async function refreshNotifications(): Promise<void> {
   await scheduleNotifications();
 }
 
-scheduleNotifications().catch(err => console.error('Error scheduling notifications:', err));
+/**
+ * Initializes notification system on bot startup
+ */
+export async function initializeNotifications(): Promise<void> {
+  await scheduleNotifications();
+}

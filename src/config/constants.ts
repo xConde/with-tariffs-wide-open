@@ -17,9 +17,11 @@ export const SOURCE_TIMEZONE = 'America/New_York'; // MarketWatch data is in ET
 export const DISPLAY_TIMEZONE = process.env.DISPLAY_TIMEZONE || 'America/Chicago'; // User display preference
 export const EST_TIMEZONE = 'America/New_York'; // Deprecated, use SOURCE_TIMEZONE
 
-// Cron schedule
+// Scheduler settings
 export const DAILY_SCRAPE_SCHEDULE = '0 3 * * *'; // 3 AM daily
 export const DAILY_SCRAPE_TIMEZONE = 'America/New_York';
+export const SCRAPER_MAX_RETRIES = 3;
+export const SCRAPER_RETRY_DELAY_MS = 60000; // 1 minute
 
 // Scraper settings
 export const SCRAPER_URL = 'https://www.marketwatch.com/economy-politics/calendar';
@@ -33,6 +35,14 @@ export const SCRAPER_USER_AGENTS = [
 // Cache cleanup
 export const CALENDAR_CACHE_MAX_AGE_MS = 3600000; // 1 hour
 export const CALENDAR_CACHE_MAX_SIZE = 100;
+
+// Health check
+export const HEARTBEAT_INTERVAL_MS = 60000; // 1 minute
+export const HEARTBEAT_MAX_AGE_MS = 120000; // 2 minutes
+
+// Discord reconnect
+export const MAX_RECONNECT_ATTEMPTS = 5;
+export const RECONNECT_BASE_DELAY_MS = 5000; // 5 seconds, multiplied by attempt number
 
 // Discord embed colors
 export const EMBED_COLOR_DEFAULT = 0x7289da;
