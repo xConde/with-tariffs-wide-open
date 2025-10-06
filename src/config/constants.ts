@@ -51,6 +51,7 @@ export const ENV_VARS = {
   RESCRAPE: 'RESCRAPE',
   DISPLAY_TIMEZONE: 'DISPLAY_TIMEZONE',
   ADMIN_USER_ID: 'ADMIN_USER_ID',
+  FALLBACK_CHANNEL_ID: 'FALLBACK_CHANNEL_ID',
 } as const;
 
 // Timezone abbreviations for display

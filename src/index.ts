@@ -5,6 +5,7 @@ import './scheduler';
 import { schedulePeriodicCleanup } from './utils/cacheCleanup';
 import { setupGracefulShutdown, registerCleanupHandler } from './utils/shutdown';
 import { startHeartbeat, stopHeartbeat } from './utils/healthCheck';
+import { validateChannelsOnStartup } from './utils/channelValidation';
 
 let cleanupInterval: NodeJS.Timeout;
 let heartbeatInterval: NodeJS.Timeout;
@@ -18,6 +19,11 @@ async function startApp() {
 
     await initializeDiscordBot();
     console.log(`Current date: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`);
+
+    await validateChannelsOnStartup(
+      process.env.DISCORD_CHANNEL_ID || '',
+      process.env.FALLBACK_CHANNEL_ID
+    );
 
     cleanupInterval = schedulePeriodicCleanup();
     registerCleanupHandler(() => {

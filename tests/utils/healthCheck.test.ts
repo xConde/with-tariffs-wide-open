@@ -47,12 +47,13 @@ describe('Health Check System', () => {
   describe('Health Check', () => {
     it('should return healthy status with recent heartbeat', async () => {
       startHeartbeat();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       const health = await checkHealth();
       expect(health.healthy).toBe(true);
       expect(health.lastHeartbeat).toBeDefined();
 
+      stopHeartbeat();
       await fs.unlink(getHeartbeatPath()).catch(() => {});
     });
 

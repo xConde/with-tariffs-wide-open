@@ -5,6 +5,7 @@ import { sendHealthAlert } from './utils/alerting';
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN || 'YOUR_DISCORD_TOKEN';
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || 'YOUR_CHANNEL_ID';
+const FALLBACK_CHANNEL_ID = process.env.FALLBACK_CHANNEL_ID;
 
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
@@ -24,10 +25,34 @@ export async function sendDiscordAlert(message: string): Promise<void> {
 export async function sendEmbed(embed: EmbedBuilder): Promise<Message | null> {
   try {
     const channel = await discordClient.channels.fetch(CHANNEL_ID) as TextChannel;
-    if (!channel || !channel.isTextBased()) return null;
+    if (!channel || !channel.isTextBased()) {
+      console.warn('Primary channel not accessible, trying fallback...');
+      return await sendToFallbackChannel(embed);
+    }
     return await channel.send({ embeds: [embed] });
   } catch (error) {
-    console.error('Error sending notification embed:', error);
+    console.error('Error sending notification embed to primary channel:', error);
+    return await sendToFallbackChannel(embed);
+  }
+}
+
+async function sendToFallbackChannel(embed: EmbedBuilder): Promise<Message | null> {
+  if (!FALLBACK_CHANNEL_ID) {
+    console.warn('No fallback channel configured');
+    return null;
+  }
+
+  try {
+    const fallback = await discordClient.channels.fetch(FALLBACK_CHANNEL_ID) as TextChannel;
+    if (!fallback || !fallback.isTextBased()) {
+      console.error('Fallback channel not accessible');
+      return null;
+    }
+
+    console.log('Using fallback channel for notification');
+    return await fallback.send({ embeds: [embed] });
+  } catch (error) {
+    console.error('Error sending to fallback channel:', error);
     return null;
   }
 }
