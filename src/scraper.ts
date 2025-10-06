@@ -23,7 +23,32 @@ export async function scrapeEconomicCalendar(): Promise<CalendarEvent[]> {
     const events: CalendarEvent[] = [];
     let currentDate = '';
 
-    $('div.element--tableblock table tbody tr').each((_, row) => {
+    const selectors = [
+      'div.element--tableblock table tbody tr',
+      'table.calendar tbody tr',
+      '.economic-calendar table tbody tr',
+      'table tbody tr',
+    ];
+
+    let rows: ReturnType<typeof $> | null = null;
+    let usedSelector = '';
+
+    for (const selector of selectors) {
+      const found = $(selector);
+      if (found.length > 0) {
+        rows = found;
+        usedSelector = selector;
+        console.log(`Using selector: "${selector}" (found ${found.length} rows)`);
+        break;
+      }
+    }
+
+    if (!rows || rows.length === 0) {
+      console.error('No table rows found with any selector');
+      throw new Error('MarketWatch HTML structure may have changed - no table found');
+    }
+
+    rows.each((_: number, row: cheerio.Element) => {
       const tds = $(row).find('td');
       if (tds.length === 0) return;
       if ($(tds[0]).find('b').length > 0) {
