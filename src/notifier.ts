@@ -148,7 +148,6 @@ async function updateCalendarAlert(msg: Message | null, originalGroup: CalendarE
     const originalKey = getGroupingKey(originalGroup[0]);
     if (!originalKey) return;
     const updatedGroup = scrapedEvents.filter(evt => getGroupingKey(evt) === originalKey);
-    console.log('Updated group events:', updatedGroup);
 
     const embedToUse = buildUpdatedNotificationEmbed(
       updatedGroup.length > 0 ? updatedGroup : originalGroup

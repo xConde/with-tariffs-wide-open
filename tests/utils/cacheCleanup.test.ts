@@ -22,6 +22,12 @@ describe('Cache Cleanup Utilities', () => {
       expect(() => cleanupCalendarCache(cache)).not.toThrow();
       expect(cache.size).toBe(0);
     });
+
+    it('should cleanup without logging', () => {
+      cache.set('msg1', { pages: [['page1']], currentPage: 0 });
+
+      expect(() => cleanupCalendarCache(cache)).not.toThrow();
+    });
   });
 
   describe('cleanupNotificationTimeouts', () => {
@@ -32,7 +38,7 @@ describe('Cache Cleanup Utilities', () => {
     });
 
     it('should remove old event timeouts', () => {
-      const oldTime = new Date(Date.now() - 10000000).toISOString(); // Very old
+      const oldTime = new Date(Date.now() - 10000000).toISOString();
       const timeout = setTimeout(() => {}, 1000);
       timeoutMap.set(oldTime, [timeout]);
 
@@ -42,7 +48,7 @@ describe('Cache Cleanup Utilities', () => {
     });
 
     it('should keep recent event timeouts', () => {
-      const recentTime = new Date(Date.now() + 3600000).toISOString(); // 1 hour in future
+      const recentTime = new Date(Date.now() + 3600000).toISOString();
       const timeout = setTimeout(() => {}, 1000);
       timeoutMap.set(recentTime, [timeout]);
 

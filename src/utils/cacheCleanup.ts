@@ -44,10 +44,6 @@ export function cleanupCalendarCache(cache: Map<string, { pages: string[][]; cur
 
   // Delete marked entries
   entriesToDelete.forEach(key => cache.delete(key));
-
-  if (entriesToDelete.length > 0) {
-    console.log(`Cleaned up ${entriesToDelete.length} calendar cache entries`);
-  }
 }
 
 /**
@@ -70,10 +66,6 @@ export function cleanupNotificationTimeouts(
   });
 
   keysToDelete.forEach(key => timeoutMap.delete(key));
-
-  if (keysToDelete.length > 0) {
-    console.log(`Cleaned up ${keysToDelete.length} old notification timeout groups`);
-  }
 }
 
 /**

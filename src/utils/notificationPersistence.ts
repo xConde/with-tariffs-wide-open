@@ -43,8 +43,6 @@ export async function saveNotificationState(
 
     await fs.mkdir(path.dirname(NOTIFICATION_STATE_FILE), { recursive: true });
     await fs.writeFile(NOTIFICATION_STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
-
-    console.log(`Notification state persisted (${state.scheduledEvents.length} groups)`);
   } catch (error) {
     console.error('Error saving notification state:', error);
   }
@@ -62,11 +60,8 @@ export async function loadNotificationState(): Promise<NotificationState | null>
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
 
     if (age > maxAge) {
-      console.log('Notification state too old, ignoring');
       return null;
     }
-
-    console.log(`Loaded notification state (${state.scheduledEvents.length} groups, ${Math.floor(age / 60000)}min old)`);
     return state;
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
