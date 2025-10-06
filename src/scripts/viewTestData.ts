@@ -5,14 +5,14 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { DISPLAY_TIMEZONE } from '../config/constants';
 
 async function main() {
-  console.log('📊 Viewing Stored Test Data\n');
+  console.log('Viewing Stored Test Data\n');
   console.log(`Display Timezone: ${DISPLAY_TIMEZONE}\n`);
 
   const events = await getStoredEvents();
 
   if (events.length === 0) {
-    console.log('⚠️  No events found in storage.');
-    console.log('💡 Run "npm run test:generate-data" to create test data');
+    console.log(' No events found in storage.');
+    console.log('Run "npm run test:generate-data" to create test data');
     return;
   }
 
@@ -39,7 +39,7 @@ async function main() {
     console.log(`  ${event.time.padEnd(10)} - ${event.title}${detailsStr}`);
   }
 
-  console.log(`\n✅ Total: ${eventCount} events across ${getUniqueDates(events).length} days`);
+  console.log(`\nTotal: ${eventCount} events across ${getUniqueDates(events).length} days`);
 }
 
 function getUniqueDates(events: any[]): string[] {
@@ -47,6 +47,6 @@ function getUniqueDates(events: any[]): string[] {
 }
 
 main().catch(err => {
-  console.error('❌ Error viewing data:', err);
+  console.error('Error viewing data:', err);
   process.exit(1);
 });

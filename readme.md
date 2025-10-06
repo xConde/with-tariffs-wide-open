@@ -22,14 +22,14 @@ A production-ready Discord bot that scrapes economic calendar events from [Marke
 - **Performance indicators** - Shows "↑ Higher" (beat forecast) or "↓ Lower" (missed)
 - **Smart grouping** - Events at same time grouped into single notification
 
-### 🤖 **Automation & Reliability**
+### **Automation & Reliability**
 - **Daily auto-scrape** - Cron job at 3 AM EST updates all data
 - **Error recovery** - 3 retry attempts with exponential backoff
 - **Memory management** - Automatic cache cleanup prevents leaks
 - **Graceful shutdown** - Proper cleanup on SIGTERM/SIGINT
 - **User-agent rotation** - Avoids rate limiting from MarketWatch
 
-### 🧪 **Testing Infrastructure**
+### **Testing Infrastructure**
 - **34 automated tests** - Unit + integration test coverage
 - **4 live flow scripts** - Test scraper, cron, notifications, full E2E
 - **Test data generator** - Create realistic data without hitting MarketWatch
@@ -82,12 +82,12 @@ npm run start
 ```
 
 The bot will:
-1. ✅ Validate environment variables
-2. ✅ Deploy slash commands to Discord
-3. ✅ Log in to Discord
-4. ✅ Schedule daily scraper (3 AM EST)
-5. ✅ Schedule notifications for upcoming events
-6. ✅ Start periodic cache cleanup
+1. Validate environment variables
+2. Deploy slash commands to Discord
+3. Log in to Discord
+4. Schedule daily scraper (3 AM EST)
+5. Schedule notifications for upcoming events
+6. Start periodic cache cleanup
 
 ---
 
@@ -103,7 +103,7 @@ Type `/calendar` in your Discord server to:
 
 **Example Display:**
 ```
-📊 Economic Calendar                                    Page 1 of 3
+Economic Calendar                                    Page 1 of 3
 
 TUESDAY, OCT. 7
 • 8:30 am ET (7:30 am CT) - U.S. trade deficit (F: $-60.7B | P: -$78.3B)
@@ -119,7 +119,7 @@ WEDNESDAY, OCT. 8
 
 The bot automatically sends alerts to the configured channel:
 
-**30-Minute Warning (Yellow 🟡):**
+**30-Minute Warning (Yellow ):**
 ```
 Events — 30-Minutes Alert
 
@@ -135,7 +135,7 @@ Events — 1-Minute Alert
   Forecast: 0.4% | Prev: 0.3%
 ```
 
-**Post-Event Update (Green/Red 🟢🔴):**
+**Post-Event Update (Green/Red ):**
 ```
 Event Results
 
@@ -146,9 +146,9 @@ Event Results
 ```
 
 Colors:
-- 🟢 Green = Beat forecast (actual > forecast)
-- 🔴 Red = Missed forecast (actual < forecast)
-- 🔵 Blue = Met expectations (actual = forecast)
+-  Green = Beat forecast (actual > forecast)
+-  Red = Missed forecast (actual < forecast)
+-  Blue = Met expectations (actual = forecast)
 
 ---
 
@@ -164,11 +164,11 @@ npm run test:integration    # Integration tests only
 ```
 
 **Test Coverage:**
-- ✅ Date parsing & year rollover logic
-- ✅ Beat/miss prediction algorithms
-- ✅ Pagination & grouping logic
-- ✅ Memory cleanup utilities
-- ✅ Data pipeline (generate → store → retrieve)
+- Date parsing & year rollover logic
+- Beat/miss prediction algorithms
+- Pagination & grouping logic
+- Memory cleanup utilities
+- Data pipeline (generate → store → retrieve)
 
 ### Live Flow Testing
 
@@ -354,21 +354,21 @@ CALENDAR_CACHE_MAX_SIZE = 100                   // Max cached messages
 This project follows strict TypeScript and Discord.js best practices defined in `.ai/rules/`:
 
 **Type Safety:**
-- ✅ No `any` types - All functions fully typed
-- ✅ Strict null checks - Proper type guards
-- ✅ No type casting - Use type narrowing
+- No `any` types - All functions fully typed
+- Strict null checks - Proper type guards
+- No type casting - Use type narrowing
 
 **Code Style:**
-- ✅ 2-space indentation
-- ✅ Single quotes
-- ✅ Comments explain WHY, not WHAT
-- ✅ Functions < 50 lines
+- 2-space indentation
+- Single quotes
+- Comments explain WHY, not WHAT
+- Functions < 50 lines
 
 **Discord.js Patterns:**
-- ✅ Always defer long operations (>3s)
-- ✅ Handle all interaction states (deferred/replied)
-- ✅ Use ephemeral messages for errors
-- ✅ Proper button pagination with state management
+- Always defer long operations (>3s)
+- Handle all interaction states (deferred/replied)
+- Use ephemeral messages for errors
+- Proper button pagination with state management
 
 ### Before Committing
 
@@ -655,16 +655,16 @@ npm test
 ### Testing Philosophy
 
 **We Test:**
-- ✅ Pure functions (date math, formatting, calculations)
-- ✅ Business logic (beat/miss, filtering, grouping)
-- ✅ Data contracts (event structure, storage format)
-- ✅ Critical paths (scraper, storage, display)
+- Pure functions (date math, formatting, calculations)
+- Business logic (beat/miss, filtering, grouping)
+- Data contracts (event structure, storage format)
+- Critical paths (scraper, storage, display)
 
 **We Script (Manual Validation):**
-- ✅ Discord interactions (slash commands, buttons)
-- ✅ Real scraping (MarketWatch HTML parsing)
-- ✅ Notification timing (30m → 1m → update flow)
-- ✅ Time-dependent flows (cron jobs, FAKE_DATE)
+- Discord interactions (slash commands, buttons)
+- Real scraping (MarketWatch HTML parsing)
+- Notification timing (30m → 1m → update flow)
+- Time-dependent flows (cron jobs, FAKE_DATE)
 
 ### Documentation
 
@@ -724,13 +724,13 @@ npm run test:live-scrape
 ## Version History
 
 ### v2.0 (Current - V2 Improvements)
-- ✅ Complete testing infrastructure (Jest + 34 tests)
-- ✅ Live flow testing scripts (FAKE_DATE-powered)
-- ✅ Timezone display support (ET → local timezone)
-- ✅ Critical bug fixes (year rollover, null handling, negative numbers)
-- ✅ Memory management (cache cleanup, graceful shutdown)
-- ✅ Error recovery (retry logic, resilient scheduler)
-- ✅ Comprehensive documentation (.ai/rules + testing guides)
+- Complete testing infrastructure (Jest + 34 tests)
+- Live flow testing scripts (FAKE_DATE-powered)
+- Timezone display support (ET → local timezone)
+- Critical bug fixes (year rollover, null handling, negative numbers)
+- Memory management (cache cleanup, graceful shutdown)
+- Error recovery (retry logic, resilient scheduler)
+- Comprehensive documentation (.ai/rules + testing guides)
 
 ### v1.1 (Previous)
 - Extended notification system with post-event updates
@@ -759,14 +759,14 @@ npm run test:live-scrape
 
 **MIT License** - See [LICENSE](LICENSE) for full terms
 
-**⚠️ EDUCATIONAL USE ONLY** - See [DISCLAIMER.md](DISCLAIMER.md) for important legal notices
+**EDUCATIONAL USE ONLY** - See [DISCLAIMER.md](DISCLAIMER.md) for important legal notices
 
 **TL;DR:**
-- ✅ Personal educational learning project
-- ❌ NOT for commercial use or financial trading
-- ❌ NO warranty on data accuracy
-- ⚠️ You are responsible for complying with MarketWatch's Terms of Service
-- ⚠️ Use at your own risk
+- Personal educational learning project
+- NOT for commercial use or financial trading
+- NO warranty on data accuracy
+- You are responsible for complying with MarketWatch's Terms of Service
+- Use at your own risk
 
 **By using this software, you agree to the terms in [DISCLAIMER.md](DISCLAIMER.md)**
 
@@ -784,10 +784,10 @@ Powered by:
 ## Support
 
 For issues or questions:
-- 📝 [Open an issue](https://github.com/xConde/with-tariffs-wide-open/issues)
-- 📖 Read [`.ai/TESTING_FLOWS.md`](.ai/TESTING_FLOWS.md) for testing help
-- 📋 Check [`TEST_ENVIRONMENT.md`](TEST_ENVIRONMENT.md) for environment setup
+- [Open an issue](https://github.com/xConde/with-tariffs-wide-open/issues)
+- Read [`.ai/TESTING_FLOWS.md`](.ai/TESTING_FLOWS.md) for testing help
+- Check [`TEST_ENVIRONMENT.md`](TEST_ENVIRONMENT.md) for environment setup
 
 ---
 
-**Current Status:** ✅ Production-ready with comprehensive testing
+**Current Status:** Production-ready with comprehensive testing

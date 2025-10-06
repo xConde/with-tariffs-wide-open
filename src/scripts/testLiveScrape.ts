@@ -80,7 +80,7 @@ function analyzeEvents(events: CalendarEvent[]): ValidationResult {
 }
 
 async function main() {
-  console.log('🔍 Live Scraper Validation Test\n');
+  console.log('Live Scraper Validation Test\n');
   console.log('Scraping MarketWatch economic calendar...\n');
 
   try {
@@ -88,12 +88,12 @@ async function main() {
     const events = await scrapeEconomicCalendar();
     const duration = Date.now() - startTime;
 
-    console.log(`✅ Scrape completed in ${duration}ms\n`);
+    console.log(`Scrape completed in ${duration}ms\n`);
 
     const validation = analyzeEvents(events);
 
     // Print statistics
-    console.log('📊 Statistics:');
+    console.log('Statistics:');
     console.log(`   Total Events: ${validation.stats.totalEvents}`);
     console.log(`   Unique Dates: ${validation.stats.uniqueDates}`);
     console.log(`   Events with Forecasts: ${validation.stats.eventsWithForecasts}`);
@@ -102,7 +102,7 @@ async function main() {
 
     // Print sample events
     if (events.length > 0) {
-      console.log('📋 Sample Events (first 3):');
+      console.log('Sample Events (first 3):');
       events.slice(0, 3).forEach((event, i) => {
         console.log(`\n   ${i + 1}. ${event.date} at ${event.time}`);
         console.log(`      Title: ${event.title}`);
@@ -115,26 +115,26 @@ async function main() {
 
     // Print validation results
     if (validation.errors.length > 0) {
-      console.log('❌ VALIDATION ERRORS:');
+      console.log('VALIDATION ERRORS:');
       validation.errors.forEach(err => console.log(`   - ${err}`));
       console.log('');
     }
 
     if (validation.warnings.length > 0) {
-      console.log('⚠️  WARNINGS:');
+      console.log(' WARNINGS:');
       validation.warnings.forEach(warn => console.log(`   - ${warn}`));
       console.log('');
     }
 
     if (validation.valid) {
-      console.log('✅ All validations passed! Scraper is working correctly.\n');
+      console.log('All validations passed! Scraper is working correctly.\n');
       process.exit(0);
     } else {
-      console.log('❌ Validation failed. Scraper may need updates.\n');
+      console.log('Validation failed. Scraper may need updates.\n');
       process.exit(1);
     }
   } catch (error) {
-    console.error('❌ Scrape failed:', error);
+    console.error('Scrape failed:', error);
     console.log('\nPossible causes:');
     console.log('   - Network connection issues');
     console.log('   - MarketWatch changed HTML structure');

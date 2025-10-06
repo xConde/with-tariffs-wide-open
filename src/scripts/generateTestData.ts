@@ -5,7 +5,7 @@ import { generateTestEvents, generatePastEventsWithActuals, generateYearRollover
 const command = process.argv[2] || 'standard';
 
 async function main() {
-  console.log('🔧 Test Data Generator for Economic Calendar Bot\n');
+  console.log('Test Data Generator for Economic Calendar Bot\n');
 
   switch (command) {
     case 'standard':
@@ -13,24 +13,24 @@ async function main() {
       console.log('Generating standard future events (14 days ahead)...');
       const futureEvents = generateTestEvents(14);
       await saveTestData(futureEvents);
-      console.log(`\n📅 Generated ${futureEvents.length} events across 14 days`);
-      console.log('🔍 Use "npm run test:view-data" to see the results');
+      console.log(`\nGenerated ${futureEvents.length} events across 14 days`);
+      console.log('Use "npm run test:view-data" to see the results');
       break;
 
     case 'past':
       console.log('Generating past events with actuals (for notification testing)...');
       const pastEvents = generatePastEventsWithActuals(2);
       await saveTestData(pastEvents);
-      console.log(`\n📊 Generated ${pastEvents.length} past events with actual values`);
-      console.log('💡 These events have beat/miss scenarios for testing notifications');
+      console.log(`\nGenerated ${pastEvents.length} past events with actual values`);
+      console.log('These events have beat/miss scenarios for testing notifications');
       break;
 
     case 'rollover':
       console.log('Generating year rollover test data (Dec/Jan)...');
       const rolloverEvents = generateYearRolloverTestData();
       await saveTestData(rolloverEvents);
-      console.log(`\n🗓️  Generated ${rolloverEvents.length} events for year rollover testing`);
-      console.log('📌 Tests December events and January next-year events');
+      console.log(`\nGenerated ${rolloverEvents.length} events for year rollover testing`);
+      console.log('Tests December events and January next-year events');
       break;
 
     case 'mixed':
@@ -38,7 +38,7 @@ async function main() {
       const future = generateTestEvents(7);
       const past = generatePastEventsWithActuals(1);
       await saveTestData([...past, ...future]);
-      console.log(`\n🔀 Generated ${past.length} past + ${future.length} future events`);
+      console.log(`\nGenerated ${past.length} past + ${future.length} future events`);
       break;
 
     case 'help':
@@ -57,13 +57,13 @@ async function main() {
       break;
 
     default:
-      console.error(`❌ Unknown command: ${command}`);
+      console.error(`Unknown command: ${command}`);
       console.log('Run "npm run test:generate-data help" for available commands');
       process.exit(1);
   }
 }
 
 main().catch(err => {
-  console.error('❌ Error generating test data:', err);
+  console.error('Error generating test data:', err);
   process.exit(1);
 });

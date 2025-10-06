@@ -9,10 +9,10 @@ This is a **personal educational project** created to demonstrate:
 - Testing methodologies
 
 **This project is NOT:**
-- ❌ A commercial product
-- ❌ Financial advice or a trading tool
-- ❌ Endorsed by or affiliated with MarketWatch, Discord, or any data provider
-- ❌ Intended for production business use
+- A commercial product
+- Financial advice or a trading tool
+- Endorsed by or affiliated with MarketWatch, Discord, or any data provider
+- Intended for production business use
 
 ## Data Source Compliance
 
@@ -28,10 +28,10 @@ This is a **personal educational project** created to demonstrate:
 ### No Rights Granted
 
 The author:
-- ❌ Does NOT claim ownership of scraped data
-- ❌ Does NOT grant you rights to MarketWatch content
-- ❌ Does NOT endorse unauthorized scraping
-- ❌ Makes NO representations about legality of use
+- Does NOT claim ownership of scraped data
+- Does NOT grant you rights to MarketWatch content
+- Does NOT endorse unauthorized scraping
+- Makes NO representations about legality of use
 
 **You must independently verify you have the right to access external data sources.**
 
@@ -41,19 +41,19 @@ The author:
 
 This software is provided "AS IS" without warranty of any kind. The author is not liable for:
 
-- ❌ Data accuracy or completeness
-- ❌ Violations of third-party terms of service
-- ❌ Financial losses or trading decisions
-- ❌ Legal issues arising from your use
-- ❌ Damages of any kind
+- Data accuracy or completeness
+- Violations of third-party terms of service
+- Financial losses or trading decisions
+- Legal issues arising from your use
+- Damages of any kind
 
 ### Financial Disclaimer
 
 Economic data from this bot:
-- ❌ Should NOT be used for trading decisions
-- ❌ May be incomplete, delayed, or inaccurate
-- ❌ Is NOT real-time or verified
-- ❌ Is for educational observation only
+- Should NOT be used for trading decisions
+- May be incomplete, delayed, or inaccurate
+- Is NOT real-time or verified
+- Is for educational observation only
 
 **Never make financial decisions based on this data.**
 

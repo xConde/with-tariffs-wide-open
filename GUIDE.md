@@ -170,10 +170,10 @@ for (const s of scrapers) {
 
 ### Pre-Deploy Checklist
 ```bash
-npm test                    # ✅ All tests pass
-npm run build               # ✅ Zero errors
-npm run test:live-scrape    # ✅ Scraper works
-npm run test:full-flow      # ✅ E2E passes
+npm test                    # All tests pass
+npm run build               # Zero errors
+npm run test:live-scrape    # Scraper works
+npm run test:full-flow      # E2E passes
 ```
 
 ### Production Start
@@ -291,9 +291,9 @@ npm run test:view-data             # View stored events
 
 | Variable | Required | Purpose |
 |----------|----------|---------|
-| `DISCORD_TOKEN` | ✅ | Bot auth token |
-| `DISCORD_CHANNEL_ID` | ✅ | Notification channel |
-| `CLIENT_ID` | ✅ | Discord app ID |
+| `DISCORD_TOKEN` | | Bot auth token |
+| `DISCORD_CHANNEL_ID` | | Notification channel |
+| `CLIENT_ID` | | Discord app ID |
 | `ADMIN_USER_ID` | - | Failure alert recipient |
 | `FALLBACK_CHANNEL_ID` | - | Backup channel |
 | `DISPLAY_TIMEZONE` | - | User timezone (default: CT) |
@@ -353,7 +353,7 @@ A: Check heartbeat.txt age (> 2min = down)
 
 ## License & Disclaimer
 
-**⚠️ READ THIS:** [DISCLAIMER.md](DISCLAIMER.md) - Important legal notices
+**READ THIS:** [DISCLAIMER.md](DISCLAIMER.md) - Important legal notices
 
 **Summary:**
 - Educational project only (NOT for commercial use)

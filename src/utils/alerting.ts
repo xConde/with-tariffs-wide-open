@@ -21,7 +21,7 @@ export async function sendAdminAlert(message: string, details?: string): Promise
 
     const embed = new EmbedBuilder()
       .setColor(0xe74c3c) // Red for errors
-      .setTitle('⚠️ Bot Alert')
+      .setTitle('Bot Alert')
       .setDescription(message)
       .setTimestamp();
 

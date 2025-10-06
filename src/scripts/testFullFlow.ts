@@ -6,7 +6,7 @@ import { addMinutes } from 'date-fns';
 import { getTimezoneOffset } from 'date-fns-tz';
 
 async function main() {
-  console.log('🚀 Full Flow End-to-End Test\n');
+  console.log('Full Flow End-to-End Test\n');
   console.log('This test will:');
   console.log('   1. Scrape live data from MarketWatch');
   console.log('   2. Save to storage');
@@ -19,10 +19,10 @@ async function main() {
 
   try {
     const scraped = await scrapeEconomicCalendar();
-    console.log(`✅ Scraped ${scraped.length} events from MarketWatch\n`);
+    console.log(`Scraped ${scraped.length} events from MarketWatch\n`);
 
     if (scraped.length === 0) {
-      console.log('⚠️  No events found. MarketWatch may be down or structure changed.');
+      console.log(' No events found. MarketWatch may be down or structure changed.');
       process.exit(1);
     }
 
@@ -30,13 +30,13 @@ async function main() {
     console.log('PHASE 2: Storage\n');
 
     await saveEvents(scraped);
-    console.log('✅ Saved events to data/events.json\n');
+    console.log('Saved events to data/events.json\n');
 
     const retrieved = await getStoredEvents();
-    console.log(`✅ Retrieved ${retrieved.length} events from storage\n`);
+    console.log(`Retrieved ${retrieved.length} events from storage\n`);
 
     if (retrieved.length !== scraped.length) {
-      console.log('❌ Storage count mismatch!');
+      console.log('Storage count mismatch!');
       process.exit(1);
     }
 
@@ -48,7 +48,7 @@ async function main() {
     const withActuals = retrieved.filter(e => e.actual && e.actual.trim() !== '');
     const speeches = retrieved.filter(e => e.title.toLowerCase().includes('speak'));
 
-    console.log('📊 Statistics:');
+    console.log('Statistics:');
     console.log(`   Total Events: ${retrieved.length}`);
     console.log(`   Unique Dates: ${uniqueDates.size}`);
     console.log(`   With Forecasts: ${withForecasts.length}`);
@@ -103,7 +103,7 @@ async function main() {
       .slice(0, 5); // Show first 5 upcoming
 
     if (upcomingWithTimes.length > 0) {
-      console.log('⏰ Next 5 notification schedules:');
+      console.log('Next 5 notification schedules:');
       upcomingWithTimes.forEach((evt, i) => {
         const parts = evt.date.split(',');
         const dayMonth = parts[1]?.trim() || '';
@@ -128,23 +128,23 @@ async function main() {
       });
       console.log('');
     } else {
-      console.log('⚠️  No upcoming events found for notification scheduling\n');
+      console.log(' No upcoming events found for notification scheduling\n');
     }
 
     console.log('═══════════════════════════════════════════════════════════\n');
-    console.log('✅ Full Flow Test Complete!\n');
+    console.log('Full Flow Test Complete!\n');
     console.log('All systems operational:');
-    console.log('   ✅ Scraper working');
-    console.log('   ✅ Storage working');
-    console.log('   ✅ Data format valid');
-    console.log('   ✅ Ready for bot deployment\n');
+    console.log('   Scraper working');
+    console.log('   Storage working');
+    console.log('   Data format valid');
+    console.log('   Ready for bot deployment\n');
 
-    console.log('🚀 To start the bot with this data:');
+    console.log('To start the bot with this data:');
     console.log('   npm run start\n');
 
   } catch (error) {
     console.log('═══════════════════════════════════════════════════════════\n');
-    console.log('❌ FLOW TEST FAILED\n');
+    console.log('FLOW TEST FAILED\n');
     console.error(error);
     console.log('\nCheck:');
     console.log('   - Network connection');

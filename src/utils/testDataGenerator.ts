@@ -141,7 +141,7 @@ export function generateTimeRelativeEvents(minutesFromNow: number[]): CalendarEv
  * Creates events 31 minutes from now (triggers 30min notification in 1 minute)
  */
 export function generateNotificationTriggerEvents(): CalendarEvent[] {
-  console.log('📅 Generating events for notification testing...');
+  console.log('Generating events for notification testing...');
   console.log('   Event time: +31 minutes from now');
   console.log('   30-min notification will trigger in: ~1 minute');
   console.log('   1-min notification will trigger in: ~30 minutes\n');
@@ -249,5 +249,5 @@ export function generateYearRolloverTestData(): CalendarEvent[] {
 export async function saveTestData(events: CalendarEvent[]): Promise<void> {
   const { saveEvents } = await import('../storage');
   await saveEvents(events);
-  console.log(`✅ Saved ${events.length} test events to storage`);
+  console.log(`Saved ${events.length} test events to storage`);
 }

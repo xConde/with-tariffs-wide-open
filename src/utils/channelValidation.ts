@@ -66,26 +66,26 @@ export async function validateChannelsOnStartup(
   const primary = await validateChannel(primaryChannelId);
 
   if (!primary.accessible) {
-    console.error(`❌ Primary channel (${primaryChannelId}) not accessible:`, primary.errors);
+    console.error(`Primary channel (${primaryChannelId}) not accessible:`, primary.errors);
     throw new Error('Primary notification channel not accessible');
   }
 
   if (!primary.hasPermissions) {
-    console.error(`❌ Primary channel missing permissions:`, primary.errors);
+    console.error(`Primary channel missing permissions:`, primary.errors);
     throw new Error('Bot lacks permissions in primary channel');
   }
 
-  console.log(`✅ Primary channel validated`);
+  console.log(`Primary channel validated`);
 
   if (fallbackChannelId) {
     const fallback = await validateChannel(fallbackChannelId);
 
     if (!fallback.accessible) {
-      console.warn(`⚠️  Fallback channel (${fallbackChannelId}) not accessible:`, fallback.errors);
+      console.warn(` Fallback channel (${fallbackChannelId}) not accessible:`, fallback.errors);
     } else if (!fallback.hasPermissions) {
-      console.warn(`⚠️  Fallback channel missing permissions:`, fallback.errors);
+      console.warn(` Fallback channel missing permissions:`, fallback.errors);
     } else {
-      console.log(`✅ Fallback channel validated`);
+      console.log(`Fallback channel validated`);
     }
   }
 }
