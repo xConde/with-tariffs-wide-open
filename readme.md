@@ -188,7 +188,7 @@ npm run test:trigger-notif
 npm run test:full-flow
 ```
 
-**See [`.ai/TESTING_FLOWS.md`](.ai/TESTING_FLOWS.md) for detailed testing workflows.**
+**See [GUIDE.md](GUIDE.md#testing) for detailed testing workflows.**
 
 ### Test Data Generation
 
@@ -208,18 +208,18 @@ npm run test:generate-data rollover
 npm run test:view-data
 ```
 
-**See [`TEST_ENVIRONMENT.md`](TEST_ENVIRONMENT.md) for complete testing guide.**
+**See [GUIDE.md](GUIDE.md#testing) for complete testing guide.**
 
 ---
 
 ## Architecture
 
-**See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for complete system diagrams including:**
-- Full system architecture with all layers
-- Module dependency graph (zero circular dependencies)
-- Data flow sequence diagrams (daily update, user commands, notifications)
-- Error recovery flows
-- Reliability features map
+**See [GUIDE.md](GUIDE.md) for comprehensive documentation including:**
+- Complete architecture with all layers and components
+- Testing workflows (automated + live flow scripts)
+- Development standards and deployment guide
+- Troubleshooting and reliability features
+- **One complete reference** for everything
 
 ### High-Level Data Flow
 ```

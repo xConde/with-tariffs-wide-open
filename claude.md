@@ -11,7 +11,7 @@ Claude should immediately read these rule files to understand the project:
 1. **Workflow Standards**: `/.ai/rules/workflow.mdc`
 2. **Code Style**: `/.ai/rules/code-style.mdc`
 3. **Discord Bot Patterns**: `/.ai/rules/discord-bot-patterns.mdc`
-4. **Testing Flows & Strategy**: `/.ai/TESTING_FLOWS.md`
+4. **Complete Guide**: `/GUIDE.md` (architecture, testing, development)
 
 ## Quick Command Reference
 
@@ -67,8 +67,10 @@ Claude should immediately read these rule files to understand the project:
 ## Important Paths
 
 - Rules: `/.ai/rules/`
-- Testing Flows: `/.ai/TESTING_FLOWS.md` (comprehensive testing guide)
+- Complete Guide: `/GUIDE.md` (ONE comprehensive reference)
+- Archived Docs: `/.ai/archive/` (historical references)
 - Source code: `/src/`
+- Scrapers: `/src/services/scrapers/` (extensible scraper modules)
 - Commands: `/src/commands/`
 - Models: `/src/models/`
 - Test Scripts: `/src/scripts/`
@@ -154,7 +156,7 @@ npm run build
 ## Session Start Protocol
 
 1. Read all rules in `/.ai/rules/`
-2. Read testing documentation: `/.ai/TESTING_FLOWS.md`
+2. Read `/GUIDE.md` for complete project reference
 3. Verify git branch and status
 4. Check for uncommitted changes
 5. Ready for commands
