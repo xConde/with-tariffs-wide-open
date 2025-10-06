@@ -50,6 +50,7 @@ export const ENV_VARS = {
   FAKE_DATE: 'FAKE_DATE',
   RESCRAPE: 'RESCRAPE',
   DISPLAY_TIMEZONE: 'DISPLAY_TIMEZONE',
+  ADMIN_USER_ID: 'ADMIN_USER_ID',
 } as const;
 
 // Timezone abbreviations for display

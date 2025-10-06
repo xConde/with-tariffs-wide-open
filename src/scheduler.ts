@@ -3,6 +3,7 @@ import { scrapeEconomicCalendar } from './scraper';
 import { saveEvents } from './storage';
 import { refreshNotifications } from './notifier';
 import { DAILY_SCRAPE_SCHEDULE } from './config/constants';
+import { sendScraperFailureAlert } from './utils/alerting';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 60000; // 1 minute
@@ -40,6 +41,10 @@ export async function updateCalendarEvents(): Promise<void> {
   }
 
   console.error(`Failed to update calendar after ${MAX_RETRIES} attempts. Last error:`, lastError);
+
+  if (lastError) {
+    await sendScraperFailureAlert(MAX_RETRIES, lastError);
+  }
 }
 
 cron.schedule(DAILY_SCRAPE_SCHEDULE, updateCalendarEvents);

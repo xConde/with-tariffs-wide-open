@@ -4,8 +4,10 @@ import { initializeDiscordBot } from './discordBot';
 import './scheduler';
 import { schedulePeriodicCleanup } from './utils/cacheCleanup';
 import { setupGracefulShutdown, registerCleanupHandler } from './utils/shutdown';
+import { startHeartbeat, stopHeartbeat } from './utils/healthCheck';
 
 let cleanupInterval: NodeJS.Timeout;
+let heartbeatInterval: NodeJS.Timeout;
 
 async function startApp() {
   try {
@@ -24,6 +26,11 @@ async function startApp() {
       }
     });
     console.log('Periodic cache cleanup scheduled');
+
+    heartbeatInterval = startHeartbeat();
+    registerCleanupHandler(() => {
+      stopHeartbeat();
+    });
 
     console.log('Application started.');
   } catch (error) {
