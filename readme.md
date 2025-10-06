@@ -755,11 +755,20 @@ npm run test:live-scrape
 
 ---
 
-## License
+## License & Disclaimer
 
-MIT License - See [LICENSE](LICENSE) file for details
+**MIT License** - See [LICENSE](LICENSE) for full terms
 
-**Educational Use Only:** This project is for educational and personal learning purposes only. Not intended for financial trading decisions or commercial use. Economic data may be incomplete or inaccurate. Use at your own risk.
+**⚠️ EDUCATIONAL USE ONLY** - See [DISCLAIMER.md](DISCLAIMER.md) for important legal notices
+
+**TL;DR:**
+- ✅ Personal educational learning project
+- ❌ NOT for commercial use or financial trading
+- ❌ NO warranty on data accuracy
+- ⚠️ You are responsible for complying with MarketWatch's Terms of Service
+- ⚠️ Use at your own risk
+
+**By using this software, you agree to the terms in [DISCLAIMER.md](DISCLAIMER.md)**
 
 ## Credits
 

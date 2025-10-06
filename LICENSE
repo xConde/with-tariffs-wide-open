@@ -22,17 +22,39 @@ SOFTWARE.
 
 ---
 
-EDUCATIONAL USE ONLY
+IMPORTANT DISCLAIMERS
 
-This project is intended for educational and personal learning purposes only.
-It is not intended for commercial use or financial trading decisions.
+EDUCATIONAL AND PERSONAL USE ONLY
 
-The author does not endorse using this software for:
+This project is a personal learning project demonstrating web scraping techniques,
+Discord bot development, and TypeScript programming. It is NOT intended for:
+- Commercial use or redistribution
 - Financial trading or investment decisions
-- Commercial profit or business purposes
-- Any use where accuracy is critical
+- Any profit-generating activities
+- Production use in business contexts
 
-Economic data is scraped from publicly available sources and may be incomplete,
-delayed, or inaccurate. Do not rely on this for financial decisions.
+DATA SOURCE DISCLAIMER
 
-USE AT YOUR OWN RISK.
+This software accesses publicly available information from third-party websites
+(including but not limited to MarketWatch.com). Users are solely responsible for:
+- Ensuring compliance with all applicable terms of service
+- Respecting robots.txt and rate limits
+- Obtaining necessary permissions from data sources
+- Complying with all applicable laws and regulations
+
+THE AUTHOR MAKES NO CLAIMS OF OWNERSHIP over any scraped data and does not grant
+any rights to use third-party content. Users must independently verify they have
+the right to access and use any external data sources.
+
+NO WARRANTY - USE AT YOUR OWN RISK
+
+Economic data may be incomplete, delayed, or inaccurate. This software is provided
+for educational demonstration purposes only. The author assumes no liability for:
+- Accuracy or completeness of data
+- Compliance with third-party terms of service
+- Any damages arising from use of this software
+- Financial losses or trading decisions
+
+By using this software, you acknowledge that you are solely responsible for
+ensuring your use complies with all applicable terms of service, laws, and
+regulations.

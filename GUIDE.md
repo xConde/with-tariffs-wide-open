@@ -353,4 +353,13 @@ A: Check heartbeat.txt age (> 2min = down)
 
 ## License & Disclaimer
 
-MIT License - Educational use only. Not intended for financial trading decisions or commercial use. See [LICENSE](LICENSE) for full terms.
+**⚠️ READ THIS:** [DISCLAIMER.md](DISCLAIMER.md) - Important legal notices
+
+**Summary:**
+- Educational project only (NOT for commercial use)
+- You must comply with MarketWatch Terms of Service
+- No warranty on data accuracy
+- Not for financial trading decisions
+- Author has zero liability for your use
+
+See [LICENSE](LICENSE) for full MIT License terms.
