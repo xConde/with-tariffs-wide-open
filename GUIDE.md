@@ -348,3 +348,9 @@ A: Check heartbeat.txt age (> 2min = down)
 ---
 
 **Version:** 2.0 | **Status:** Production-ready | **Reliability:** 9.5/10
+
+---
+
+## License & Disclaimer
+
+MIT License - Educational use only. Not intended for financial trading decisions or commercial use. See [LICENSE](LICENSE) for full terms.

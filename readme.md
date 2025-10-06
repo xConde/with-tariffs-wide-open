@@ -757,7 +757,9 @@ npm run test:live-scrape
 
 ## License
 
-[Add your license here]
+MIT License - See [LICENSE](LICENSE) file for details
+
+**Educational Use Only:** This project is for educational and personal learning purposes only. Not intended for financial trading decisions or commercial use. Economic data may be incomplete or inaccurate. Use at your own risk.
 
 ## Credits
 
