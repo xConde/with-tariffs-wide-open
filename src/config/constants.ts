@@ -23,6 +23,7 @@ export const DAILY_SCRAPE_TIMEZONE = 'America/New_York';
 
 // Scraper settings
 export const SCRAPER_URL = 'https://www.marketwatch.com/economy-politics/calendar';
+export const SCRAPER_TIMEOUT_MS = 15000; // 15 seconds - prevents indefinite hangs
 export const SCRAPER_USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',

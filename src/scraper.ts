@@ -1,7 +1,7 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import * as cheerio from 'cheerio';
 import { CalendarEvent } from './models/event';
-import { SCRAPER_URL, SCRAPER_USER_AGENTS } from './config/constants';
+import { SCRAPER_URL, SCRAPER_USER_AGENTS, SCRAPER_TIMEOUT_MS } from './config/constants';
 
 function getRandomUserAgent(): string {
   return SCRAPER_USER_AGENTS[Math.floor(Math.random() * SCRAPER_USER_AGENTS.length)];
@@ -16,7 +16,8 @@ export async function scrapeEconomicCalendar(): Promise<CalendarEvent[]> {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
         'Referer': 'https://www.marketwatch.com/'
-      }
+      },
+      timeout: SCRAPER_TIMEOUT_MS,
     });
     const $ = cheerio.load(html);
     const events: CalendarEvent[] = [];
@@ -41,6 +42,20 @@ export async function scrapeEconomicCalendar(): Promise<CalendarEvent[]> {
 
     return events;
   } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        console.error(`Scraper timeout after ${SCRAPER_TIMEOUT_MS}ms`);
+        throw new Error(`MarketWatch request timed out after ${SCRAPER_TIMEOUT_MS / 1000}s`);
+      }
+      if (error.response) {
+        console.error(`MarketWatch returned ${error.response.status}: ${error.response.statusText}`);
+        throw new Error(`MarketWatch HTTP ${error.response.status}`);
+      }
+      if (error.request) {
+        console.error('No response from MarketWatch (network issue)');
+        throw new Error('Network error - no response from MarketWatch');
+      }
+    }
     console.error('Error scraping economic calendar:', error);
     throw error;
   }
