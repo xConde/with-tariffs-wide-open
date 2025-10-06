@@ -1,9 +1,14 @@
 import { Client, GatewayIntentBits, TextChannel, Interaction, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Message } from 'discord.js';
 import 'dotenv/config';
 import { calendarCommand, buildCalendarEmbed } from './commands/calendar';
+import { sendHealthAlert } from './utils/alerting';
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN || 'YOUR_DISCORD_TOKEN';
 const CHANNEL_ID = process.env.DISCORD_CHANNEL_ID || 'YOUR_CHANNEL_ID';
+
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_DELAY_MS = 5000;
 
 export const discordClient = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
@@ -25,6 +30,30 @@ export async function sendEmbed(embed: EmbedBuilder): Promise<Message | null> {
     console.error('Error sending notification embed:', error);
     return null;
   }
+}
+
+async function attemptReconnect(): Promise<void> {
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.error('Max reconnect attempts reached. Please restart bot manually.');
+    await sendHealthAlert('Discord Connection', `Failed to reconnect after ${MAX_RECONNECT_ATTEMPTS} attempts`);
+    return;
+  }
+
+  reconnectAttempts++;
+  const delay = RECONNECT_DELAY_MS * reconnectAttempts;
+
+  console.log(`Attempting to reconnect to Discord (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}) in ${delay / 1000}s...`);
+
+  setTimeout(async () => {
+    try {
+      await discordClient.login(DISCORD_TOKEN);
+      reconnectAttempts = 0;
+      console.log('Successfully reconnected to Discord');
+    } catch (error) {
+      console.error('Reconnect attempt failed:', error);
+      await attemptReconnect();
+    }
+  }, delay);
 }
 
 export async function initializeDiscordBot(): Promise<void> {
@@ -63,9 +92,36 @@ export async function initializeDiscordBot(): Promise<void> {
     }
   });
 
+  discordClient.on('disconnect', () => {
+    console.warn('Disconnected from Discord');
+    attemptReconnect();
+  });
+
+  discordClient.on('error', (error) => {
+    console.error('Discord client error:', error);
+  });
+
+  discordClient.on('shardError', (error) => {
+    console.error('Discord shard error:', error);
+  });
+
+  discordClient.on('shardDisconnect', (event, shardId) => {
+    console.warn(`Shard ${shardId} disconnected (code: ${event.code})`);
+  });
+
+  discordClient.on('shardReconnecting', (shardId) => {
+    console.log(`Shard ${shardId} reconnecting...`);
+  });
+
+  discordClient.on('shardResume', (shardId) => {
+    console.log(`Shard ${shardId} resumed`);
+    reconnectAttempts = 0;
+  });
+
   return new Promise((resolve, reject) => {
     discordClient.once('ready', () => {
       console.log(`Discord bot logged in as ${discordClient.user?.tag}`);
+      reconnectAttempts = 0;
       resolve();
     });
     discordClient.login(DISCORD_TOKEN).catch(reject);
