@@ -9,8 +9,8 @@ import {
 } from '../config/constants';
 
 function predictBeat(actual: string, forecast: string): 'beat' | 'miss' | 'neutral' {
-  const a = parseFloat(actual.replace(/[^0-9.]/g, ''));
-  const f = parseFloat(forecast.replace(/[^0-9.]/g, ''));
+  const a = parseFloat(actual.replace(/[^0-9.-]/g, ''));
+  const f = parseFloat(forecast.replace(/[^0-9.-]/g, ''));
   if (isNaN(a) || isNaN(f)) return 'neutral';
   if (a > f) return 'beat';
   if (a < f) return 'miss';

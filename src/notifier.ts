@@ -59,10 +59,18 @@ function groupEvents(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
   for (const evt of events) {
     const key = getGroupingKey(evt);
     if (!key) continue;
-    const evtTime = parseEventDateTime(evt)!;
-    if (evtTime.getTime() <= Date.now()) continue;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(evt);
+
+    const evtTime = parseEventDateTime(evt);
+    if (!evtTime || evtTime.getTime() <= Date.now()) continue;
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+
+    const group = groups.get(key);
+    if (group) {
+      group.push(evt);
+    }
   }
   return groups;
 }
@@ -120,7 +128,7 @@ export async function scheduleNotifications(): Promise<void> {
   }
 }
 
-async function updateCalendarAlert(msg: Message<boolean> | null, originalGroup: CalendarEvent[]): Promise<void> {
+async function updateCalendarAlert(msg: Message | null, originalGroup: CalendarEvent[]): Promise<void> {
   try {
     const scrapedEvents = await scrapeEconomicCalendar();
     const originalKey = getGroupingKey(originalGroup[0]);
