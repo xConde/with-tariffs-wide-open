@@ -1,0 +1,238 @@
+---
+description: Code formatting and style standards for the Discord bot TypeScript codebase
+globs:
+  - 'src/**/*.ts'
+alwaysApply: true
+priority: high
+---
+# Code Style Standards
+
+## Objective
+Maintain consistent code formatting and style across the TypeScript Discord bot codebase.
+
+## Context
+- TypeScript with strict compilation
+- discord.js v14
+- Node.js >=18.0.0
+- ES2016 target with CommonJS modules
+
+## Rules
+
+### Formatting Standards
+- **Indentation**: 2 spaces (no tabs)
+- **Quotes**: Single quotes for strings
+- **Line endings**: LF (Unix-style)
+- **Semicolons**: Required at end of statements
+- **Final newline**: Required
+- **Trailing whitespace**: Remove all
+
+✅ **Good**:
+```typescript
+import { Client, GatewayIntentBits } from 'discord.js';
+
+export const discordClient = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+});
+```
+
+❌ **Avoid**:
+```typescript
+import { Client, GatewayIntentBits } from "discord.js"
+
+export const discordClient = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+})
+```
+
+### Import Organization
+- **Discord.js imports**: First group
+- **Third-party libraries**: Second group
+- **Application imports**: Last group
+- **Blank lines**: Between import groups
+
+✅ **Good**:
+```typescript
+import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+
+import { CalendarEvent } from './models/event';
+import { getStoredEvents, saveEvents } from './storage';
+```
+
+### TypeScript Style
+- **Type annotations**: Explicit for function returns and parameters
+- **Access modifiers**: Use export for public APIs
+- **Arrow functions**: Preferred for callbacks and short functions
+- **Const assertions**: Use for immutable data
+- **Async/await**: Preferred over Promise chains
+
+### Type Safety Standards
+- **NEVER use 'any' type** - Always use proper TypeScript types
+- **NEVER use type casting** - Use proper type guards instead
+- Use specific interfaces for all data structures
+- Use `unknown` if type is truly unknown and add type guards
+- All function parameters and returns must be typed
+- Use generic types when appropriate
+
+✅ **Good**:
+```typescript
+export interface CalendarEvent {
+  date: string;
+  time: string;
+  title: string;
+  period: string;
+  actual?: string;
+  forecast?: string;
+  previous?: string;
+}
+
+export async function scrapeEconomicCalendar(): Promise<CalendarEvent[]> {
+  const events: CalendarEvent[] = [];
+  // ... scraping logic
+  return events;
+}
+```
+
+❌ **Avoid**:
+```typescript
+// No any types
+function processData(data: any): any {
+  return data;
+}
+
+// No type casting
+const value = data as string;
+```
+
+### Code Quality Standards
+- Keep functions focused on single responsibility
+- Maximum function length: ~50 lines (prefer smaller)
+- Extract complex logic into named functions
+- Use descriptive variable names
+- Document complex logic with comments
+
+✅ **Good**:
+```typescript
+function parseDateHeader(header: string): Date {
+  try {
+    const parts = header.split(',');
+    const dayMonth = parts[1]?.trim() || '';
+    const year = new Date().getFullYear();
+    return new Date(`${dayMonth} ${year}`);
+  } catch {
+    return new Date(0);
+  }
+}
+
+function isDateOld(dateStr: string): boolean {
+  const parsed = parseDateHeader(dateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  parsed.setHours(0, 0, 0, 0);
+  return parsed < today;
+}
+```
+
+### Error Handling
+- Always handle errors in async functions
+- Use try/catch blocks for operations that can fail
+- Log errors with context
+- Provide user-friendly error messages
+
+✅ **Good**:
+```typescript
+export async function scrapeEconomicCalendar(): Promise<CalendarEvent[]> {
+  try {
+    const { data: html } = await axios.get(url, { headers });
+    const $ = cheerio.load(html);
+    const events: CalendarEvent[] = [];
+    // ... parsing logic
+    return events;
+  } catch (error) {
+    console.error('Error scraping economic calendar:', error);
+    throw error;
+  }
+}
+```
+
+### Comment Standards
+- **Write comments that explain WHY, not WHAT**
+- **Remove comments that describe obvious code**
+- **Keep comments for important context and algorithms**
+- Use JSDoc for function documentation
+
+✅ **Good Comments**:
+```typescript
+// Using globalThis to persist cache across module hot reloads
+globalThis.calendarCache = globalThis.calendarCache || new Map();
+
+// MarketWatch requires realistic user agents to avoid blocking
+const userAgents = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64)...Safari/537.36',
+];
+```
+
+❌ **Bad Comments**:
+```typescript
+// Set title
+embed.setTitle('Calendar');
+
+// Return events
+return events;
+
+// Check if empty
+if (events.length === 0) { }
+```
+
+### Discord.js Patterns
+- Use interaction.deferReply() for long operations
+- Handle both deferred and non-deferred replies
+- Always check interaction state before replying
+- Use ephemeral messages for errors
+
+✅ **Good**:
+```typescript
+async execute(interaction: ChatInputCommandInteraction) {
+  try {
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
+
+    // ... long operation
+
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(content);
+    } else {
+      await interaction.reply(content);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    if (interaction.isRepliable()) {
+      await interaction.reply({ content: 'Error occurred', ephemeral: true });
+    }
+  }
+}
+```
+
+### Global State Management
+- Use globalThis for bot-wide state
+- Initialize with fallback pattern
+- Clear state when appropriate
+- Document global declarations
+
+✅ **Good**:
+```typescript
+declare global {
+  var calendarCache: Map<string, CacheData>;
+  var notificationTimeouts: Map<string, NodeJS.Timeout[]>;
+}
+
+globalThis.calendarCache = globalThis.calendarCache || new Map();
+globalThis.notificationTimeouts = globalThis.notificationTimeouts || new Map();
+```
+
+## Exceptions
+- Environment variable defaults can use placeholder strings
+- Third-party library code follows original formatting
+- JSON files follow their specific formatting rules
