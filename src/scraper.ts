@@ -1,20 +1,15 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { CalendarEvent } from './models/event';
-
-const userAgents = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64)...Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)...Safari/605.1.15',
-  'Mozilla/5.0 (X11; Linux x86_64)...Safari/537.36',
-];
+import { SCRAPER_URL, SCRAPER_USER_AGENTS } from './config/constants';
 
 function getRandomUserAgent(): string {
-  return userAgents[Math.floor(Math.random() * userAgents.length)];
+  return SCRAPER_USER_AGENTS[Math.floor(Math.random() * SCRAPER_USER_AGENTS.length)];
 }
 
 export async function scrapeEconomicCalendar(): Promise<CalendarEvent[]> {
   try {
-    const url = 'https://www.marketwatch.com/economy-politics/calendar';
+    const url = SCRAPER_URL;
     const { data: html } = await axios.get(url, {
       headers: {
         'User-Agent': getRandomUserAgent(),

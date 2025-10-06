@@ -1,0 +1,49 @@
+/**
+ * Application-wide constants for the Discord Economic Calendar Bot
+ */
+
+// Pagination
+export const DATES_PER_PAGE = 5;
+
+// Notification timings (in minutes)
+export const NOTIFICATION_EARLY_WARNING_MINUTES = 30;
+export const NOTIFICATION_FINAL_WARNING_MINUTES = 1;
+
+// Post-event update delay (in milliseconds)
+export const POST_EVENT_UPDATE_DELAY_MS = 90000; // 90 seconds
+
+// Timezone
+export const EST_TIMEZONE = 'America/New_York';
+
+// Cron schedule
+export const DAILY_SCRAPE_SCHEDULE = '0 3 * * *'; // 3 AM daily
+export const DAILY_SCRAPE_TIMEZONE = 'America/New_York';
+
+// Scraper settings
+export const SCRAPER_URL = 'https://www.marketwatch.com/economy-politics/calendar';
+export const SCRAPER_USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+];
+
+// Cache cleanup
+export const CALENDAR_CACHE_MAX_AGE_MS = 3600000; // 1 hour
+export const CALENDAR_CACHE_MAX_SIZE = 100;
+
+// Discord embed colors
+export const EMBED_COLOR_DEFAULT = 0x7289da;
+export const EMBED_COLOR_WARNING_30MIN = 0xf1c40f; // Yellow
+export const EMBED_COLOR_WARNING_1MIN = 0xff8c00; // Dark orange
+export const EMBED_COLOR_SUCCESS = 0x2ecc71; // Green (beat forecast)
+export const EMBED_COLOR_FAILURE = 0xe74c3c; // Red (missed forecast)
+
+// Environment variables (with defaults for documentation)
+export const ENV_VARS = {
+  DISCORD_TOKEN: 'DISCORD_TOKEN',
+  DISCORD_CHANNEL_ID: 'DISCORD_CHANNEL_ID',
+  CLIENT_ID: 'CLIENT_ID',
+  GUILD_ID: 'GUILD_ID',
+  FAKE_DATE: 'FAKE_DATE',
+  RESCRAPE: 'RESCRAPE',
+} as const;

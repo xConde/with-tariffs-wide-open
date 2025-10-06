@@ -1,5 +1,12 @@
 import { EmbedBuilder, ColorResolvable } from 'discord.js';
 import { CalendarEvent } from '../models/event';
+import {
+  EMBED_COLOR_WARNING_30MIN,
+  EMBED_COLOR_WARNING_1MIN,
+  EMBED_COLOR_DEFAULT,
+  EMBED_COLOR_SUCCESS,
+  EMBED_COLOR_FAILURE,
+} from '../config/constants';
 
 function predictBeat(actual: string, forecast: string): 'beat' | 'miss' | 'neutral' {
   const a = parseFloat(actual.replace(/[^0-9.]/g, ''));
@@ -18,7 +25,7 @@ function getBeatMissIndicator(prediction: 'beat' | 'miss' | 'neutral'): string {
 
 export function buildNotificationEmbed(windowMinutes: number, groupEvents: CalendarEvent[]): EmbedBuilder {
   const windowText = windowMinutes === 30 ? '30-Minutes' : windowMinutes === 1 ? '1-Minute' : `${windowMinutes}-Minute`;
-  const color: ColorResolvable = windowMinutes === 1 ? 0xff8c00 : 0xf1c40f;
+  const color: ColorResolvable = windowMinutes === 1 ? EMBED_COLOR_WARNING_1MIN : EMBED_COLOR_WARNING_30MIN;
   const label = groupEvents.length === 1 ? 'Event' : 'Events';
   const embed = new EmbedBuilder().setColor(color).setTitle(`${label} — ${windowText} Alert`);
 
@@ -44,11 +51,11 @@ export function buildNotificationEmbed(windowMinutes: number, groupEvents: Calen
 }
 
 export function buildUpdatedNotificationEmbed(groupEvents: CalendarEvent[]): EmbedBuilder {
-  let embedColor: ColorResolvable = 0x7289da;
+  let embedColor: ColorResolvable = EMBED_COLOR_DEFAULT;
   if (groupEvents.length === 1) {
     const evt = groupEvents[0];
     const prediction = predictBeat(evt.actual || '', evt.forecast || '');
-    embedColor = prediction === 'beat' ? 0x2ecc71 : prediction === 'miss' ? 0xe74c3c : 0x7289da;
+    embedColor = prediction === 'beat' ? EMBED_COLOR_SUCCESS : prediction === 'miss' ? EMBED_COLOR_FAILURE : EMBED_COLOR_DEFAULT;
   }
   const embed = new EmbedBuilder().setColor(embedColor).setTitle('Event Results');
 

@@ -2,13 +2,12 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ActionR
 import { getStoredEvents, saveEvents } from '../storage';
 import { scrapeEconomicCalendar } from '../scraper';
 import { CalendarEvent } from '../models/event';
+import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT } from '../config/constants';
 
 declare global {
   var calendarCache: Map<string, { pages: string[][]; currentPage: number }>;
 }
 globalThis.calendarCache = globalThis.calendarCache || new Map();
-
-const DATES_PER_PAGE = 5;
 
 function parseDateHeader(header: string): Date {
   try {
@@ -82,7 +81,7 @@ function chunkDateBlocks(blocks: string[]): string[][] {
 }
 
 export function buildCalendarEmbed(pageBlocks: string[], pageIndex: number, totalPages: number): EmbedBuilder {
-  const embed = new EmbedBuilder().setTitle('Economic Calendar').setFooter({ text: `Page ${pageIndex + 1} of ${totalPages}` }).setColor(0x7289da);
+  const embed = new EmbedBuilder().setTitle('Economic Calendar').setFooter({ text: `Page ${pageIndex + 1} of ${totalPages}` }).setColor(EMBED_COLOR_DEFAULT);
   for (const block of pageBlocks) {
     const lines = block.split('\n');
     const headingLine = lines[0] || 'No Date';

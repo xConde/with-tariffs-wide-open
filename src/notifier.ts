@@ -7,8 +7,12 @@ import { CalendarEvent } from './models/event';
 import { scrapeEconomicCalendar } from './scraper';
 import { buildNotificationEmbed, buildUpdatedNotificationEmbed } from './events/notifierMessage';
 import { sendEmbed } from './discordBot';
-
-const EST_TIMEZONE = 'America/New_York';
+import {
+  EST_TIMEZONE,
+  NOTIFICATION_EARLY_WARNING_MINUTES,
+  NOTIFICATION_FINAL_WARNING_MINUTES,
+  POST_EVENT_UPDATE_DELAY_MS,
+} from './config/constants';
 
 declare global {
   var notificationTimeouts: Map<string, NodeJS.Timeout[]>;
@@ -85,22 +89,22 @@ export async function scheduleNotifications(): Promise<void> {
   for (const [groupKey, groupEvents] of sortedGroupEntries) {
     const eventTime = parseEventDateTime(groupEvents[0]);
     if (!eventTime) continue;
-    const notifTime30 = addMinutes(eventTime, -30);
-    const notifTime1 = addMinutes(eventTime, -1);
+    const notifTime30 = addMinutes(eventTime, -NOTIFICATION_EARLY_WARNING_MINUTES);
+    const notifTime1 = addMinutes(eventTime, -NOTIFICATION_FINAL_WARNING_MINUTES);
     const notifTimes = [notifTime30, notifTime1];
     const timeoutIds: NodeJS.Timeout[] = [];
 
     notifTimes.forEach(nt => {
       const delay = differenceInMilliseconds(nt, new Date());
       if (delay > 0) {
-        const windowMinutes = (nt.getTime() === notifTime30.getTime()) ? 30 : 1;
+        const windowMinutes = (nt.getTime() === notifTime30.getTime()) ? NOTIFICATION_EARLY_WARNING_MINUTES : NOTIFICATION_FINAL_WARNING_MINUTES;
         const timeoutId = setTimeout(async () => {
-          if (windowMinutes === 1) {
+          if (windowMinutes === NOTIFICATION_FINAL_WARNING_MINUTES) {
             const embed = buildNotificationEmbed(windowMinutes, groupEvents);
             const msg = await sendEmbed(embed);
             setTimeout(async () => {
               await updateCalendarAlert(msg, groupEvents);
-            }, 90000);
+            }, POST_EVENT_UPDATE_DELAY_MS);
           } else {
             const embed = buildNotificationEmbed(windowMinutes, groupEvents);
             await sendEmbed(embed);
