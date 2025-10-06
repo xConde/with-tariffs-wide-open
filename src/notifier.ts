@@ -7,8 +7,13 @@ import { CalendarEvent } from './models/event';
 import { scrapeEconomicCalendar } from './scraper';
 import { buildNotificationEmbed, buildUpdatedNotificationEmbed } from './events/notifierMessage';
 import { sendEmbed } from './discordBot';
-
-const EST_TIMEZONE = 'America/New_York';
+import {
+  EST_TIMEZONE,
+  NOTIFICATION_EARLY_WARNING_MINUTES,
+  NOTIFICATION_FINAL_WARNING_MINUTES,
+  POST_EVENT_UPDATE_DELAY_MS,
+} from './config/constants';
+import { getEventsNeedingNotifications, clearNotificationState } from './utils/notificationPersistence';
 
 declare global {
   var notificationTimeouts: Map<string, NodeJS.Timeout[]>;
@@ -55,10 +60,18 @@ function groupEvents(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
   for (const evt of events) {
     const key = getGroupingKey(evt);
     if (!key) continue;
-    const evtTime = parseEventDateTime(evt)!;
-    if (evtTime.getTime() <= Date.now()) continue;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(evt);
+
+    const evtTime = parseEventDateTime(evt);
+    if (!evtTime || evtTime.getTime() <= Date.now()) continue;
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+
+    const group = groups.get(key);
+    if (group) {
+      group.push(evt);
+    }
   }
   return groups;
 }
@@ -72,8 +85,19 @@ function clearScheduledNotifications(): void {
 
 export async function scheduleNotifications(): Promise<void> {
   clearScheduledNotifications();
-  const events = await getStoredEvents();
-  if (events.length === 0) return;
+
+  let events = await getStoredEvents();
+
+  if (events.length === 0) {
+    const restoredEvents = await getEventsNeedingNotifications();
+    if (restoredEvents.length > 0) {
+      console.log(`Restoring ${restoredEvents.length} events from persisted state`);
+      events = restoredEvents;
+    } else {
+      return;
+    }
+  }
+
   const groups = groupEvents(events);
 
   const sortedGroupEntries = Array.from(groups.entries()).sort((a, b) => {
@@ -85,22 +109,22 @@ export async function scheduleNotifications(): Promise<void> {
   for (const [groupKey, groupEvents] of sortedGroupEntries) {
     const eventTime = parseEventDateTime(groupEvents[0]);
     if (!eventTime) continue;
-    const notifTime30 = addMinutes(eventTime, -30);
-    const notifTime1 = addMinutes(eventTime, -1);
+    const notifTime30 = addMinutes(eventTime, -NOTIFICATION_EARLY_WARNING_MINUTES);
+    const notifTime1 = addMinutes(eventTime, -NOTIFICATION_FINAL_WARNING_MINUTES);
     const notifTimes = [notifTime30, notifTime1];
     const timeoutIds: NodeJS.Timeout[] = [];
 
     notifTimes.forEach(nt => {
       const delay = differenceInMilliseconds(nt, new Date());
       if (delay > 0) {
-        const windowMinutes = (nt.getTime() === notifTime30.getTime()) ? 30 : 1;
+        const windowMinutes = (nt.getTime() === notifTime30.getTime()) ? NOTIFICATION_EARLY_WARNING_MINUTES : NOTIFICATION_FINAL_WARNING_MINUTES;
         const timeoutId = setTimeout(async () => {
-          if (windowMinutes === 1) {
+          if (windowMinutes === NOTIFICATION_FINAL_WARNING_MINUTES) {
             const embed = buildNotificationEmbed(windowMinutes, groupEvents);
             const msg = await sendEmbed(embed);
             setTimeout(async () => {
               await updateCalendarAlert(msg, groupEvents);
-            }, 90000);
+            }, POST_EVENT_UPDATE_DELAY_MS);
           } else {
             const embed = buildNotificationEmbed(windowMinutes, groupEvents);
             await sendEmbed(embed);
@@ -114,15 +138,16 @@ export async function scheduleNotifications(): Promise<void> {
     });
     globalThis.notificationTimeouts.set(groupKey, timeoutIds);
   }
+
+  await clearNotificationState();
 }
 
-async function updateCalendarAlert(msg: Message<boolean> | null, originalGroup: CalendarEvent[]): Promise<void> {
+async function updateCalendarAlert(msg: Message | null, originalGroup: CalendarEvent[]): Promise<void> {
   try {
     const scrapedEvents = await scrapeEconomicCalendar();
     const originalKey = getGroupingKey(originalGroup[0]);
     if (!originalKey) return;
     const updatedGroup = scrapedEvents.filter(evt => getGroupingKey(evt) === originalKey);
-    console.log('Updated group events:', updatedGroup);
 
     const embedToUse = buildUpdatedNotificationEmbed(
       updatedGroup.length > 0 ? updatedGroup : originalGroup
@@ -146,4 +171,9 @@ export async function refreshNotifications(): Promise<void> {
   await scheduleNotifications();
 }
 
-scheduleNotifications().catch(err => console.error('Error scheduling notifications:', err));
+/**
+ * Initializes notification system on bot startup
+ */
+export async function initializeNotifications(): Promise<void> {
+  await scheduleNotifications();
+}

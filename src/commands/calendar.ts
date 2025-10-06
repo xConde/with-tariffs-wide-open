@@ -2,20 +2,30 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ActionR
 import { getStoredEvents, saveEvents } from '../storage';
 import { scrapeEconomicCalendar } from '../scraper';
 import { CalendarEvent } from '../models/event';
+import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT, SOURCE_TIMEZONE, DISPLAY_TIMEZONE } from '../config/constants';
+import { formatTimeWithTimezone } from '../utils/timezoneDisplay';
+import { parse } from 'date-fns';
 
 declare global {
   var calendarCache: Map<string, { pages: string[][]; currentPage: number }>;
 }
 globalThis.calendarCache = globalThis.calendarCache || new Map();
 
-const DATES_PER_PAGE = 5;
-
 function parseDateHeader(header: string): Date {
   try {
     const parts = header.split(',');
     const dayMonth = parts[1]?.trim() || '';
-    const year = new Date().getFullYear();
-    return new Date(`${dayMonth} ${year}`);
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+
+    let parsedDate = new Date(`${dayMonth} ${currentYear}`);
+
+    // Handle year rollover: if parsed date is in the past and we're in Nov/Dec, try next year
+    if (parsedDate.getMonth() < currentMonth && currentMonth >= 10) {
+      parsedDate = new Date(`${dayMonth} ${currentYear + 1}`);
+    }
+
+    return parsedDate;
   } catch {
     return new Date(0);
   }
@@ -54,6 +64,26 @@ function getEventDetails(evt: CalendarEvent): string {
   return details.join(' | ');
 }
 
+function formatEventTime(evt: CalendarEvent): string {
+  try {
+    const parts = evt.date.split(',');
+    const dayMonth = parts[1]?.trim() || '';
+    const currentYear = new Date().getFullYear();
+    const timeET = evt.time;
+
+    const dateStr = `${dayMonth} ${currentYear} ${timeET}`;
+    const eventDate = parse(dateStr, 'MMM. d yyyy h:mm a', new Date());
+
+    if (SOURCE_TIMEZONE === DISPLAY_TIMEZONE) {
+      return `**${timeET}**`;
+    }
+
+    return `**${formatTimeWithTimezone(timeET, eventDate)}**`;
+  } catch {
+    return `**${evt.time}**`;
+  }
+}
+
 function buildDateBlocks(grouped: Map<string, CalendarEvent[]>): string[] {
   const sortedDates = Array.from(grouped.keys()).sort(
     (a, b) => parseDateHeader(a).getTime() - parseDateHeader(b).getTime()
@@ -64,9 +94,10 @@ function buildDateBlocks(grouped: Map<string, CalendarEvent[]>): string[] {
     let block = `**${dateHeading}**\n`;
     for (const evt of evts) {
       const details = getEventDetails(evt);
-      block += details 
-        ? `• **${evt.time}** - ${evt.title} (${details})\n`
-        : `• **${evt.time}** - ${evt.title}\n`;
+      const timeDisplay = formatEventTime(evt);
+      block += details
+        ? `• ${timeDisplay} - ${evt.title} (${details})\n`
+        : `• ${timeDisplay} - ${evt.title}\n`;
     }
     blocks.push(block.trim());
   }
@@ -82,7 +113,7 @@ function chunkDateBlocks(blocks: string[]): string[][] {
 }
 
 export function buildCalendarEmbed(pageBlocks: string[], pageIndex: number, totalPages: number): EmbedBuilder {
-  const embed = new EmbedBuilder().setTitle('Economic Calendar').setFooter({ text: `Page ${pageIndex + 1} of ${totalPages}` }).setColor(0x7289da);
+  const embed = new EmbedBuilder().setTitle('Economic Calendar').setFooter({ text: `Page ${pageIndex + 1} of ${totalPages}` }).setColor(EMBED_COLOR_DEFAULT);
   for (const block of pageBlocks) {
     const lines = block.split('\n');
     const headingLine = lines[0] || 'No Date';
@@ -98,15 +129,19 @@ export const calendarCommand = {
   async execute(interaction: ChatInputCommandInteraction) {
     try {
       let events = await getStoredEvents();
+      let shouldDefer = events.length === 0;
+
+      if (shouldDefer && !interaction.deferred && !interaction.replied) {
+        await interaction.deferReply();
+      }
+
       if (events.length === 0) {
-        if (!interaction.deferred && !interaction.replied) {
-          await interaction.deferReply();
-        }
         events = await scrapeEconomicCalendar();
         if (events.length > 0) {
           await saveEvents(events);
         }
       }
+
       if (events.length === 0) {
         const msg = 'No calendar events found.';
         if (interaction.deferred || interaction.replied) {
@@ -116,6 +151,7 @@ export const calendarCommand = {
         }
         return;
       }
+
       const grouped = groupEventsByDate(events);
       if (grouped.size === 0) {
         const noDataMsg = 'No upcoming events found.';
@@ -126,6 +162,7 @@ export const calendarCommand = {
         }
         return;
       }
+
       const dateBlocks = buildDateBlocks(grouped);
       const pages = chunkDateBlocks(dateBlocks);
       const totalPages = pages.length;
@@ -135,10 +172,11 @@ export const calendarCommand = {
         new ButtonBuilder().setCustomId('calendar_prev').setLabel('Previous page').setStyle(ButtonStyle.Secondary).setDisabled(true),
         new ButtonBuilder().setCustomId('calendar_next').setLabel('Next page').setStyle(ButtonStyle.Secondary).setDisabled(totalPages <= 1)
       );
-      if (!interaction.deferred && !interaction.replied) {
-        await interaction.deferReply();
-      }
-      const message = await interaction.editReply({ embeds: [embed], components: [row] });
+
+      const message = interaction.deferred || interaction.replied
+        ? await interaction.editReply({ embeds: [embed], components: [row] })
+        : await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
+
       globalThis.calendarCache.set(message.id, { pages, currentPage });
     } catch (error) {
       console.error('Error in /calendar command:', error);

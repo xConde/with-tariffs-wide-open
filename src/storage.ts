@@ -20,11 +20,11 @@ export async function getStoredEvents(): Promise<CalendarEvent[]> {
     await fs.mkdir(DATA_DIR, { recursive: true });
     const data = await fs.readFile(DATA_FILE, 'utf8');
     return JSON.parse(data) as CalendarEvent[];
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
       return [];
     }
     console.error('Error reading events:', error);
-    throw error;
+    return []; // Return empty array instead of throwing
   }
 }

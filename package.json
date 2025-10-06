@@ -4,7 +4,17 @@
   "scripts": {
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "node --max-old-space-size=2048 dist/deploy-commands.js && node --max-old-space-size=2048 dist/index.js"
+    "start": "node --max-old-space-size=2048 dist/deploy-commands.js && node --max-old-space-size=2048 dist/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:generate-data": "ts-node src/scripts/generateTestData.ts",
+    "test:view-data": "ts-node src/scripts/viewTestData.ts",
+    "test:integration": "jest tests/integration",
+    "test:live-scrape": "ts-node src/scripts/testLiveScrape.ts",
+    "test:trigger-cron": "ts-node src/scripts/testTriggerCron.ts",
+    "test:trigger-notif": "ts-node src/scripts/testTriggerNotification.ts",
+    "test:full-flow": "ts-node src/scripts/testFullFlow.ts"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -22,7 +32,11 @@
     "typescript": "^5.8.2"
   },
   "devDependencies": {
+    "@jest/globals": "^30.2.0",
+    "@types/jest": "^30.0.0",
     "@types/node-cron": "^3.0.11",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.4"
   }
 }

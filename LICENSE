@@ -1,0 +1,60 @@
+MIT License
+
+Copyright (c) 2025 Ed Conde
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+IMPORTANT DISCLAIMERS
+
+EDUCATIONAL AND PERSONAL USE ONLY
+
+This project is a personal learning project demonstrating web scraping techniques,
+Discord bot development, and TypeScript programming. It is NOT intended for:
+- Commercial use or redistribution
+- Financial trading or investment decisions
+- Any profit-generating activities
+- Production use in business contexts
+
+DATA SOURCE DISCLAIMER
+
+This software accesses publicly available information from third-party websites
+(including but not limited to MarketWatch.com). Users are solely responsible for:
+- Ensuring compliance with all applicable terms of service
+- Respecting robots.txt and rate limits
+- Obtaining necessary permissions from data sources
+- Complying with all applicable laws and regulations
+
+THE AUTHOR MAKES NO CLAIMS OF OWNERSHIP over any scraped data and does not grant
+any rights to use third-party content. Users must independently verify they have
+the right to access and use any external data sources.
+
+NO WARRANTY - USE AT YOUR OWN RISK
+
+Economic data may be incomplete, delayed, or inaccurate. This software is provided
+for educational demonstration purposes only. The author assumes no liability for:
+- Accuracy or completeness of data
+- Compliance with third-party terms of service
+- Any damages arising from use of this software
+- Financial losses or trading decisions
+
+By using this software, you acknowledge that you are solely responsible for
+ensuring your use complies with all applicable terms of service, laws, and
+regulations.

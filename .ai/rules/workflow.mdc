@@ -1,0 +1,146 @@
+---
+alwaysApply: true
+---
+
+# Development Workflow Standards
+
+## Primary Directive
+You are developing and maintaining a Discord bot that scrapes economic calendar data and provides notifications. This bot serves real-time financial data to Discord users.
+
+## Core Workflow
+
+### 1. Code Quality First
+- **Build before commit**: Always run `npm run build` before marking tasks complete
+- **Zero TypeScript errors**: All code must compile successfully
+- **Test locally**: Verify functionality works as expected
+- **Type safety**: Maintain strict TypeScript standards
+
+### 2. Feature Development Process
+1. Understand the requirement
+2. Plan the implementation
+3. Write type-safe code following project patterns
+4. Test the feature thoroughly
+5. Build and verify compilation
+6. Document changes if needed
+7. Create atomic commits
+
+### 3. Bug Fixing Process
+1. Reproduce the issue
+2. Identify root cause
+3. Implement fix following existing patterns
+4. Test to verify fix works
+5. Build to ensure no regressions
+6. Commit with clear message explaining the fix
+
+## Project Structure
+
+```
+with-tariffs-wide-open/
+├── src/
+│   ├── commands/          # Discord slash commands
+│   │   └── calendar.ts    # Main /calendar command
+│   ├── events/           # Discord event handlers
+│   │   └── notifierMessage.ts
+│   ├── models/           # TypeScript interfaces
+│   │   └── event.ts
+│   ├── discordBot.ts     # Discord client setup
+│   ├── scraper.ts        # MarketWatch scraper
+│   ├── storage.ts        # JSON file persistence
+│   ├── scheduler.ts      # Cron job for daily updates
+│   ├── notifier.ts       # Notification scheduling
+│   ├── globalSetup.ts    # Environment setup
+│   ├── deploy-commands.ts # Slash command deployment
+│   └── index.ts          # Application entry point
+├── dist/                 # Compiled JavaScript
+├── package.json
+├── tsconfig.json
+└── .env                  # Environment configuration
+```
+
+## Critical Rules
+
+### Build and Testing
+- **ALWAYS build before commit**: `npm run build` must succeed
+- **ALWAYS test changes**: Ensure functionality works as expected
+- **NO partial implementations**: Complete features atomically
+- **NO breaking changes**: Maintain backward compatibility
+
+### Code Standards
+- Follow `.ai/rules/code-style.mdc` for all code
+- Follow `.ai/rules/discord-bot-patterns.mdc` for Discord.js patterns
+- Maintain type safety - no `any` types
+- Keep functions focused and small
+- Document complex logic
+
+### Git and Version Control
+- **Never commit directly** unless explicitly asked
+- Keep commits focused and atomic
+- Write clear commit messages explaining WHY
+- Test thoroughly before marking complete
+- Follow conventional commit format when appropriate
+
+### Documentation Standards
+- Keep README.md up to date with features
+- Document complex algorithms inline
+- Update environment variable documentation
+- Maintain clear function signatures
+
+## Discord Bot Development Patterns
+
+### Command Structure
+- Each command in its own file under `src/commands/`
+- Export SlashCommandBuilder as `data`
+- Export async `execute` function
+- Handle all interaction states (deferred, replied, etc.)
+
+### Error Handling
+- Wrap command execution in try/catch
+- Log errors with context
+- Provide user-friendly error messages
+- Use ephemeral messages for errors
+
+### State Management
+- Use globalThis for bot-wide state
+- Initialize with fallback pattern
+- Clear state appropriately
+- Document global declarations
+
+## Scraping Best Practices
+- Rotate user agents to avoid blocking
+- Handle parsing errors gracefully
+- Validate data before storage
+- Log scraping failures with context
+
+## Notification System
+- Parse dates correctly with timezone handling
+- Group events by time
+- Schedule with proper delay calculation
+- Clean up old timeouts
+- Update notifications with fresh data
+
+## Environment Variables
+Required variables in `.env`:
+- `DISCORD_TOKEN`: Bot authentication token
+- `DISCORD_CHANNEL_ID`: Target channel for notifications
+- `CLIENT_ID`: Discord application client ID
+- `FAKE_DATE`: (Optional) For testing date-based features
+- `RESCRAPE`: (Optional) Force data update on startup
+
+## Task Completion Requirements
+- **Complete ALL tasks**: Build, test, verify, and update docs
+- **Zero errors**: Fix all TypeScript and runtime errors
+- **Update tracking**: Mark todos complete only when fully done
+- **Return to user**: Only when 100% complete and verified
+
+## Work Continuation Philosophy
+- **Continue work systematically**: Complete comprehensive changes
+- **No incremental stopping**: Finish entire cleanup/refactor sessions
+- **Work through all files**: Don't stop after minimal changes
+- **Focus on completion**: Comprehensive improvements over partial fixes
+
+## Debug and Troubleshooting
+- Check Discord API status if bot issues occur
+- Verify environment variables are set correctly
+- Test scraping URLs for changes in HTML structure
+- Monitor rate limits and API quotas
+- Review logs for error patterns

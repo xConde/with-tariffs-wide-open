@@ -1,0 +1,380 @@
+---
+description: Discord.js v14 best practices and patterns for bot development
+globs:
+  - 'src/**/*.ts'
+alwaysApply: true
+priority: high
+---
+# Discord Bot Development Patterns
+
+## Objective
+Establish consistent patterns for Discord.js v14 bot development, focusing on reliability, user experience, and maintainability.
+
+## Context
+- discord.js v14.18.0
+- Slash commands and interactions
+- Button-based pagination
+- Scheduled notifications
+- Economic calendar data display
+
+## Core Patterns
+
+### Command Structure
+
+#### Slash Command Definition
+Every command must follow this structure:
+
+✅ **Good**:
+```typescript
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+
+export const commandName = {
+  data: new SlashCommandBuilder()
+    .setName('calendar')
+    .setDescription('Shows upcoming economic calendar events'),
+
+  async execute(interaction: ChatInputCommandInteraction) {
+    // Implementation
+  },
+};
+```
+
+#### Command Registration
+Commands are deployed via `deploy-commands.ts`:
+- Reads all command files from `src/commands/`
+- Registers with Discord API
+- Runs before bot starts
+
+### Interaction Handling
+
+#### Universal Interaction Pattern
+ALWAYS handle all possible interaction states:
+
+✅ **Good**:
+```typescript
+async execute(interaction: ChatInputCommandInteraction) {
+  try {
+    // Defer early if operation might take time
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
+
+    // ... perform operation ...
+
+    // Respond based on current state
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(content);
+    } else {
+      await interaction.reply(content);
+    }
+  } catch (error) {
+    console.error('Error in command:', error);
+
+    // Safe error response
+    if (interaction.isRepliable()) {
+      const errorMsg = { content: 'An error occurred', ephemeral: true };
+
+      if (interaction.deferred || interaction.replied) {
+        await interaction.editReply(errorMsg);
+      } else {
+        await interaction.reply(errorMsg);
+      }
+    }
+  }
+}
+```
+
+❌ **Avoid**:
+```typescript
+// Missing defer for long operations
+async execute(interaction: ChatInputCommandInteraction) {
+  const data = await longOperation(); // May timeout
+  await interaction.reply(data); // Fails if > 3 seconds
+}
+
+// Not checking interaction state
+await interaction.reply(content); // May fail if already deferred
+```
+
+### Button Interactions
+
+#### Pagination Pattern
+✅ **Good**:
+```typescript
+if (interaction.isButton()) {
+  const { customId } = interaction;
+
+  // Validate button is for this feature
+  if (!['calendar_prev', 'calendar_next'].includes(customId)) return;
+
+  // Retrieve cached state
+  const messageId = interaction.message.id;
+  const cache = globalThis.calendarCache?.get(messageId);
+
+  if (!cache) {
+    await interaction.reply({ content: 'No pagination data found.', ephemeral: true });
+    return;
+  }
+
+  let { pages, currentPage } = cache;
+
+  // Update page based on button
+  if (customId === 'calendar_prev' && currentPage > 0) currentPage--;
+  else if (customId === 'calendar_next' && currentPage < pages.length - 1) currentPage++;
+
+  // Build new embed and buttons
+  const embed = buildEmbed(pages[currentPage], currentPage, pages.length);
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId('calendar_prev')
+      .setLabel('Previous page')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(currentPage === 0),
+    new ButtonBuilder()
+      .setCustomId('calendar_next')
+      .setLabel('Next page')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(currentPage === pages.length - 1),
+  );
+
+  // Update cache and message
+  globalThis.calendarCache.set(messageId, { pages, currentPage });
+  await interaction.update({ embeds: [embed], components: [row] });
+}
+```
+
+### Embed Construction
+
+#### Consistent Embed Formatting
+✅ **Good**:
+```typescript
+export function buildCalendarEmbed(
+  pageBlocks: string[],
+  pageIndex: number,
+  totalPages: number
+): EmbedBuilder {
+  const embed = new EmbedBuilder()
+    .setTitle('Economic Calendar')
+    .setFooter({ text: `Page ${pageIndex + 1} of ${totalPages}` })
+    .setColor(0x7289da);
+
+  for (const block of pageBlocks) {
+    const lines = block.split('\n');
+    const headingLine = lines[0] || 'No Date';
+    const rest = lines.slice(1).join('\n');
+
+    embed.addFields({
+      name: headingLine,
+      value: rest || '\u200B' // Zero-width space for empty fields
+    });
+  }
+
+  return embed;
+}
+```
+
+#### Notification Embeds
+- Use appropriate colors for context (warning, info, success)
+- Include timestamp information
+- Format data clearly for mobile viewing
+- Show performance indicators when available
+
+### Global State Management
+
+#### Persistent State Pattern
+✅ **Good**:
+```typescript
+// Declare global types
+declare global {
+  var calendarCache: Map<string, { pages: string[][]; currentPage: number }>;
+  var notificationTimeouts: Map<string, NodeJS.Timeout[]>;
+}
+
+// Initialize with fallback
+globalThis.calendarCache = globalThis.calendarCache || new Map();
+globalThis.notificationTimeouts = globalThis.notificationTimeouts || new Map();
+
+// Clean up when needed
+function clearOldCache(): void {
+  // Implement cleanup logic
+  globalThis.calendarCache.clear();
+}
+```
+
+### Error Handling Best Practices
+
+#### Graceful Degradation
+✅ **Good**:
+```typescript
+try {
+  const events = await scrapeEconomicCalendar();
+
+  if (events.length === 0) {
+    // Graceful handling of empty results
+    const msg = 'No calendar events found.';
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(msg);
+    } else {
+      await interaction.reply(msg);
+    }
+    return;
+  }
+
+  // Continue with normal flow
+} catch (error) {
+  console.error('Error scraping calendar:', error);
+
+  // User-friendly error message
+  const errorMsg = 'An error occurred while fetching calendar events.';
+  if (interaction.deferred || interaction.replied) {
+    await interaction.editReply(errorMsg);
+  } else {
+    await interaction.reply({ content: errorMsg, ephemeral: true });
+  }
+}
+```
+
+### Channel Communication
+
+#### Sending Messages
+✅ **Good**:
+```typescript
+export async function sendEmbed(embed: EmbedBuilder): Promise<Message | null> {
+  try {
+    const channel = await discordClient.channels.fetch(CHANNEL_ID) as TextChannel;
+
+    if (!channel || !channel.isTextBased()) {
+      console.error('Channel not found or not text-based');
+      return null;
+    }
+
+    return await channel.send({ embeds: [embed] });
+  } catch (error) {
+    console.error('Error sending notification embed:', error);
+    return null;
+  }
+}
+```
+
+#### Editing Messages
+✅ **Good**:
+```typescript
+async function updateNotification(msg: Message | null, newEmbed: EmbedBuilder): Promise<void> {
+  if (msg && typeof msg.edit === 'function') {
+    try {
+      await msg.edit({ embeds: [newEmbed] });
+    } catch (error) {
+      console.error('Error editing message:', error);
+    }
+  }
+}
+```
+
+### Scheduling and Timers
+
+#### Notification Scheduling Pattern
+✅ **Good**:
+```typescript
+export async function scheduleNotifications(): Promise<void> {
+  // Clear existing schedules first
+  clearScheduledNotifications();
+
+  const events = await getStoredEvents();
+  if (events.length === 0) return;
+
+  const groups = groupEvents(events);
+
+  for (const [groupKey, groupEvents] of groups.entries()) {
+    const eventTime = parseEventDateTime(groupEvents[0]);
+    if (!eventTime) continue;
+
+    const notifTime = addMinutes(eventTime, -30);
+    const delay = differenceInMilliseconds(notifTime, new Date());
+
+    if (delay > 0) {
+      const timeoutId = setTimeout(async () => {
+        const embed = buildNotificationEmbed(30, groupEvents);
+        await sendEmbed(embed);
+      }, delay);
+
+      // Store timeout for cleanup
+      const timeouts = globalThis.notificationTimeouts.get(groupKey) || [];
+      timeouts.push(timeoutId);
+      globalThis.notificationTimeouts.set(groupKey, timeouts);
+
+      console.log(`Scheduled notification in ${(delay / 1000).toFixed(1)}s`);
+    }
+  }
+}
+
+function clearScheduledNotifications(): void {
+  globalThis.notificationTimeouts.forEach(timeouts => {
+    timeouts.forEach(id => clearTimeout(id));
+  });
+  globalThis.notificationTimeouts.clear();
+}
+```
+
+### Bot Initialization
+
+#### Proper Startup Sequence
+✅ **Good**:
+```typescript
+export async function initializeDiscordBot(): Promise<void> {
+  // Register event handlers
+  discordClient.on('interactionCreate', async (interaction: Interaction) => {
+    try {
+      if (interaction.isChatInputCommand()) {
+        // Handle commands
+      }
+      if (interaction.isButton()) {
+        // Handle buttons
+      }
+    } catch (error) {
+      console.error('Error in interactionCreate:', error);
+      if (interaction.isRepliable()) {
+        await interaction.reply({ content: 'Something went wrong.', ephemeral: true });
+      }
+    }
+  });
+
+  // Return promise that resolves when ready
+  return new Promise((resolve, reject) => {
+    discordClient.once('ready', () => {
+      console.log(`Discord bot logged in as ${discordClient.user?.tag}`);
+      resolve();
+    });
+
+    discordClient.login(DISCORD_TOKEN).catch(reject);
+  });
+}
+```
+
+## Common Pitfalls to Avoid
+
+❌ **Don't**:
+1. Forget to defer long operations (>3s)
+2. Reply to already-replied interactions
+3. Forget to disable buttons at boundaries
+4. Use bare `any` types for Discord types
+5. Forget to clean up timeouts/intervals
+6. Send non-ephemeral error messages
+7. Forget to validate interaction state
+8. Hard-code IDs or tokens in source
+
+✅ **Do**:
+1. Always defer if operation might take time
+2. Check interaction state before replying
+3. Disable pagination buttons appropriately
+4. Use proper Discord.js types
+5. Clean up scheduled tasks
+6. Use ephemeral for error/debug messages
+7. Validate all user input
+8. Use environment variables for config
+
+## Testing Considerations
+- Test with FAKE_DATE environment variable for date-dependent features
+- Verify pagination works with different data sizes
+- Test error scenarios (network failures, invalid data)
+- Verify notification timing accuracy
+- Test interaction timeout handling

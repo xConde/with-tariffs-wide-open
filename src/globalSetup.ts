@@ -25,16 +25,25 @@ if (process.env.FAKE_DATE) {
   );
 }
 
+let rescrapePromise: Promise<void> | null = null;
+
 if (process.env.RESCRAPE === '1') {
-  (async () => {
+  rescrapePromise = (async () => {
     console.log('Manual rescrape enabled. Running updateCalendarEvents...');
     try {
       await updateCalendarEvents();
       console.log('Manual rescrape completed.');
     } catch (error) {
       console.error('Error during manual rescrape:', error);
+      throw error;
     }
   })();
+}
+
+export async function waitForInitialSetup(): Promise<void> {
+  if (rescrapePromise) {
+    await rescrapePromise;
+  }
 }
 
 const requiredEnvVars = ['DISCORD_TOKEN', 'DISCORD_CHANNEL_ID', 'CLIENT_ID'];
@@ -44,7 +53,3 @@ for (const varName of requiredEnvVars) {
     process.exit(1);
   }
 }
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});

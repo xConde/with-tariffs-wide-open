@@ -9,3 +9,10 @@
 
 # dependencies
 /node_modules
+
+# test coverage
+/coverage
+*.lcov
+
+# health check
+heartbeat.txt
