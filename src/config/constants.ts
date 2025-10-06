@@ -13,7 +13,9 @@ export const NOTIFICATION_FINAL_WARNING_MINUTES = 1;
 export const POST_EVENT_UPDATE_DELAY_MS = 90000; // 90 seconds
 
 // Timezone
-export const EST_TIMEZONE = 'America/New_York';
+export const SOURCE_TIMEZONE = 'America/New_York'; // MarketWatch data is in ET
+export const DISPLAY_TIMEZONE = process.env.DISPLAY_TIMEZONE || 'America/Chicago'; // User display preference
+export const EST_TIMEZONE = 'America/New_York'; // Deprecated, use SOURCE_TIMEZONE
 
 // Cron schedule
 export const DAILY_SCRAPE_SCHEDULE = '0 3 * * *'; // 3 AM daily
@@ -46,4 +48,16 @@ export const ENV_VARS = {
   GUILD_ID: 'GUILD_ID',
   FAKE_DATE: 'FAKE_DATE',
   RESCRAPE: 'RESCRAPE',
+  DISPLAY_TIMEZONE: 'DISPLAY_TIMEZONE',
 } as const;
+
+// Timezone abbreviations for display
+export const TIMEZONE_ABBREV: Record<string, string> = {
+  'America/New_York': 'ET',
+  'America/Chicago': 'CT',
+  'America/Denver': 'MT',
+  'America/Los_Angeles': 'PT',
+  'America/Phoenix': 'MST',
+  'America/Anchorage': 'AKT',
+  'Pacific/Honolulu': 'HST',
+};

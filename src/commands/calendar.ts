@@ -2,7 +2,9 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ActionR
 import { getStoredEvents, saveEvents } from '../storage';
 import { scrapeEconomicCalendar } from '../scraper';
 import { CalendarEvent } from '../models/event';
-import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT } from '../config/constants';
+import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT, SOURCE_TIMEZONE, DISPLAY_TIMEZONE } from '../config/constants';
+import { formatTimeWithTimezone } from '../utils/timezoneDisplay';
+import { parse } from 'date-fns';
 
 declare global {
   var calendarCache: Map<string, { pages: string[][]; currentPage: number }>;
@@ -62,6 +64,26 @@ function getEventDetails(evt: CalendarEvent): string {
   return details.join(' | ');
 }
 
+function formatEventTime(evt: CalendarEvent): string {
+  try {
+    const parts = evt.date.split(',');
+    const dayMonth = parts[1]?.trim() || '';
+    const currentYear = new Date().getFullYear();
+    const timeET = evt.time;
+
+    const dateStr = `${dayMonth} ${currentYear} ${timeET}`;
+    const eventDate = parse(dateStr, 'MMM. d yyyy h:mm a', new Date());
+
+    if (SOURCE_TIMEZONE === DISPLAY_TIMEZONE) {
+      return `**${timeET}**`;
+    }
+
+    return `**${formatTimeWithTimezone(timeET, eventDate)}**`;
+  } catch {
+    return `**${evt.time}**`;
+  }
+}
+
 function buildDateBlocks(grouped: Map<string, CalendarEvent[]>): string[] {
   const sortedDates = Array.from(grouped.keys()).sort(
     (a, b) => parseDateHeader(a).getTime() - parseDateHeader(b).getTime()
@@ -72,9 +94,10 @@ function buildDateBlocks(grouped: Map<string, CalendarEvent[]>): string[] {
     let block = `**${dateHeading}**\n`;
     for (const evt of evts) {
       const details = getEventDetails(evt);
-      block += details 
-        ? `• **${evt.time}** - ${evt.title} (${details})\n`
-        : `• **${evt.time}** - ${evt.title}\n`;
+      const timeDisplay = formatEventTime(evt);
+      block += details
+        ? `• ${timeDisplay} - ${evt.title} (${details})\n`
+        : `• ${timeDisplay} - ${evt.title}\n`;
     }
     blocks.push(block.trim());
   }

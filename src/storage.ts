@@ -25,6 +25,6 @@ export async function getStoredEvents(): Promise<CalendarEvent[]> {
       return [];
     }
     console.error('Error reading events:', error);
-    throw error;
+    return []; // Return empty array instead of throwing
   }
 }

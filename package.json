@@ -7,7 +7,10 @@
     "start": "node --max-old-space-size=2048 dist/deploy-commands.js && node --max-old-space-size=2048 dist/index.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:generate-data": "ts-node src/scripts/generateTestData.ts",
+    "test:view-data": "ts-node src/scripts/viewTestData.ts",
+    "test:integration": "jest tests/integration"
   },
   "engines": {
     "node": ">=18.0.0"
