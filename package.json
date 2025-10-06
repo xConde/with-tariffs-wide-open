@@ -10,7 +10,11 @@
     "test:coverage": "jest --coverage",
     "test:generate-data": "ts-node src/scripts/generateTestData.ts",
     "test:view-data": "ts-node src/scripts/viewTestData.ts",
-    "test:integration": "jest tests/integration"
+    "test:integration": "jest tests/integration",
+    "test:live-scrape": "ts-node src/scripts/testLiveScrape.ts",
+    "test:trigger-cron": "ts-node src/scripts/testTriggerCron.ts",
+    "test:trigger-notif": "ts-node src/scripts/testTriggerNotification.ts",
+    "test:full-flow": "ts-node src/scripts/testFullFlow.ts"
   },
   "engines": {
     "node": ">=18.0.0"

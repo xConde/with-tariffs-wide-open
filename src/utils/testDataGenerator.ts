@@ -1,5 +1,5 @@
 import { CalendarEvent } from '../models/event';
-import { addDays, addHours, format, startOfDay } from 'date-fns';
+import { addDays, addHours, addMinutes, format, startOfDay } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 interface EventTemplate {
@@ -47,6 +47,17 @@ const eventTimes = [
   '6:00 pm', '7:15 pm', '9:40 pm'
 ];
 
+function formatDateHeader(date: Date): string {
+  const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  const monthAbbrev = ['JAN.', 'FEB.', 'MAR.', 'APR.', 'MAY', 'JUNE', 'JULY', 'AUG.', 'SEPT.', 'OCT.', 'NOV.', 'DEC.'];
+
+  const dayName = dayNames[date.getDay()];
+  const monthName = monthAbbrev[date.getMonth()];
+  const dayNum = date.getDate();
+
+  return `${dayName}, ${monthName} ${dayNum}`;
+}
+
 /**
  * Generates realistic economic calendar test data relative to current date/time
  * @param daysAhead - Number of days ahead to generate events for
@@ -59,15 +70,10 @@ export function generateTestEvents(
 ): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   const today = startOfDay(new Date());
-  const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-  const monthAbbrev = ['JAN.', 'FEB.', 'MAR.', 'APR.', 'MAY', 'JUNE', 'JULY', 'AUG.', 'SEPT.', 'OCT.', 'NOV.', 'DEC.'];
 
   for (let day = 0; day < daysAhead; day++) {
     const currentDate = addDays(today, day);
-    const dayName = dayNames[currentDate.getDay()];
-    const monthName = monthAbbrev[currentDate.getMonth()];
-    const dayNum = currentDate.getDate();
-    const dateHeader = `${dayName}, ${monthName} ${dayNum}`;
+    const dateHeader = formatDateHeader(currentDate);
 
     const numEvents = Math.floor(Math.random() * 5) + 2; // 2-6 events per day
 
@@ -102,18 +108,73 @@ export function generateTestEvents(
 }
 
 /**
+ * Generates events at specific times relative to now for notification testing
+ * @param minutesFromNow - Array of minutes from now to create events
+ * @returns Events scheduled at specified intervals
+ */
+export function generateTimeRelativeEvents(minutesFromNow: number[]): CalendarEvent[] {
+  const events: CalendarEvent[] = [];
+
+  minutesFromNow.forEach((minutes, index) => {
+    const eventTime = addMinutes(new Date(), minutes);
+    const dateHeader = formatDateHeader(eventTime);
+    const timeStr = formatInTimeZone(eventTime, 'America/New_York', 'h:mm a');
+
+    const template = economicIndicators[index % economicIndicators.length];
+
+    events.push({
+      date: dateHeader,
+      time: timeStr,
+      title: template.title,
+      period: template.period,
+      forecast: template.forecast || '',
+      previous: template.previous || '',
+      actual: '',
+    });
+  });
+
+  return events;
+}
+
+/**
+ * Generates events for immediate notification trigger testing
+ * Creates events 31 minutes from now (triggers 30min notification in 1 minute)
+ */
+export function generateNotificationTriggerEvents(): CalendarEvent[] {
+  console.log('📅 Generating events for notification testing...');
+  console.log('   Event time: +31 minutes from now');
+  console.log('   30-min notification will trigger in: ~1 minute');
+  console.log('   1-min notification will trigger in: ~30 minutes\n');
+
+  return generateTimeRelativeEvents([31, 32, 35]); // 31, 32, and 35 minutes from now
+}
+
+/**
+ * Generates events for cron job testing
+ * Returns events but with guidance on FAKE_DATE to set
+ */
+export function generateCronTriggerEvents(): { events: CalendarEvent[]; fakeDateISO: string } {
+  // Generate events for tomorrow
+  const events = generateTestEvents(7);
+
+  // Calculate FAKE_DATE that will trigger cron in 1 minute
+  const now = new Date();
+  const fakeDateLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 2, 59, 0); // 2:59 AM EST
+  const fakeDateUTC = new Date(fakeDateLocal.getTime() + (5 * 60 * 60 * 1000)); // EST is UTC-5
+
+  return {
+    events,
+    fakeDateISO: fakeDateUTC.toISOString(),
+  };
+}
+
+/**
  * Generates past events with actual values populated (for testing notifications)
  */
 export function generatePastEventsWithActuals(hoursAgo: number = 2): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   const eventDate = addHours(new Date(), -hoursAgo);
-  const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-  const monthAbbrev = ['JAN.', 'FEB.', 'MAR.', 'APR.', 'MAY', 'JUNE', 'JULY', 'AUG.', 'SEPT.', 'OCT.', 'NOV.', 'DEC.'];
-
-  const dayName = dayNames[eventDate.getDay()];
-  const monthName = monthAbbrev[eventDate.getMonth()];
-  const dayNum = eventDate.getDate();
-  const dateHeader = `${dayName}, ${monthName} ${dayNum}`;
+  const dateHeader = formatDateHeader(eventDate);
   const time = formatInTimeZone(eventDate, 'America/New_York', 'h:mm a');
 
   // Generate a beat scenario

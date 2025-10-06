@@ -11,6 +11,8 @@ Claude should immediately read these rule files to understand the project:
 1. **Workflow Standards**: `/.ai/rules/workflow.mdc`
 2. **Code Style**: `/.ai/rules/code-style.mdc`
 3. **Discord Bot Patterns**: `/.ai/rules/discord-bot-patterns.mdc`
+4. **Testing Strategy**: `/.ai/TESTING_STRATEGY.md`
+5. **Testing Flows**: `/.ai/TESTING_FLOWS.md`
 
 ## Quick Command Reference
 
@@ -21,10 +23,18 @@ Claude should immediately read these rule files to understand the project:
 - **"commit ready"** - Create git commit with proper message
 - **"pr ready"** - Create pull request with description
 
+### Testing Commands
+
+- **"test flow"** - Run complete flow validation (`npm run test:full-flow`)
+- **"validate scraper"** - Test live MarketWatch scraping (`npm run test:live-scrape`)
+- **"test notifications"** - Setup notification trigger test (`npm run test:trigger-notif`)
+- **"test cron"** - Setup cron job trigger test (`npm run test:trigger-cron`)
+
 ### Analysis Commands
 
 - **"check errors"** - Run build and identify TypeScript errors
 - **"review code"** - Analyze codebase for improvements
+- **"check coverage"** - Run tests with coverage report
 
 ## Active Project Context
 
@@ -58,10 +68,13 @@ Claude should immediately read these rule files to understand the project:
 ## Important Paths
 
 - Rules: `/.ai/rules/`
+- Testing Docs: `/.ai/TESTING_STRATEGY.md` and `/.ai/TESTING_FLOWS.md`
 - Source code: `/src/`
 - Commands: `/src/commands/`
 - Models: `/src/models/`
+- Test Scripts: `/src/scripts/`
 - Build output: `/dist/`
+- Test coverage: `/coverage/` (gitignored)
 
 ## Code Quality Standards
 
@@ -142,9 +155,10 @@ npm run build
 ## Session Start Protocol
 
 1. Read all rules in `/.ai/rules/`
-2. Verify git branch and status
-3. Check for uncommitted changes
-4. Ready for commands
+2. Read testing documentation: `/.ai/TESTING_STRATEGY.md` and `/.ai/TESTING_FLOWS.md`
+3. Verify git branch and status
+4. Check for uncommitted changes
+5. Ready for commands
 
 ## Code Review Workflow
 
