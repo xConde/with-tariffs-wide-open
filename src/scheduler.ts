@@ -4,6 +4,7 @@ import { saveEvents } from './storage';
 import { refreshNotifications } from './notifier';
 import { DAILY_SCRAPE_SCHEDULE } from './config/constants';
 import { sendScraperFailureAlert } from './utils/alerting';
+import { shouldAcceptScrapedData } from './utils/dataValidation';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 60000; // 1 minute
@@ -20,11 +21,14 @@ export async function updateCalendarEvents(): Promise<void> {
       console.log(`Scraping calendar events (attempt ${attempt}/${MAX_RETRIES})...`);
       const events = await scrapeEconomicCalendar();
 
-      if (events.length > 0) {
+      if (events.length > 0 && shouldAcceptScrapedData(events)) {
         await saveEvents(events);
         await refreshNotifications();
         console.log(`Events updated and notifications refreshed (${events.length} events).`);
         return;
+      } else if (events.length > 0 && !shouldAcceptScrapedData(events)) {
+        console.warn('Scraped data rejected by validation. Keeping existing data.');
+        throw new Error('Invalid scraped data - keeping old data');
       } else {
         console.log('Scrape returned no events.');
         return;
