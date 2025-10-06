@@ -214,14 +214,21 @@ npm run test:view-data
 
 ## Architecture
 
-### Data Flow
+**See [ARCHITECTURE_DIAGRAM.md](ARCHITECTURE_DIAGRAM.md) for complete system diagrams including:**
+- Full system architecture with all layers
+- Module dependency graph (zero circular dependencies)
+- Data flow sequence diagrams (daily update, user commands, notifications)
+- Error recovery flows
+- Reliability features map
+
+### High-Level Data Flow
 ```
 MarketWatch (Live Data)
        ↓
    Scraper (axios + cheerio)
-       ↓
+       ↓ 15s timeout, 4 selector fallbacks, 3 retries
    Storage (JSON persistence)
-       ↓
+       ↓ Validation before save, atomic writes
    ┌──────────────┬──────────────┐
    ↓              ↓              ↓
 Calendar      Scheduler    Notifier
@@ -229,6 +236,8 @@ Command      (Cron 3AM)   (30m/1m alerts)
    ↓              ↓              ↓
 Discord       Re-scrape    Discord
 Display       & Refresh    Notifications
+   ↓              ↓              ↓
+Pagination   Admin Alert  Fallback Channel
 ```
 
 ### Project Structure
