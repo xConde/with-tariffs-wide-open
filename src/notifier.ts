@@ -13,6 +13,7 @@ import {
   NOTIFICATION_FINAL_WARNING_MINUTES,
   POST_EVENT_UPDATE_DELAY_MS,
 } from './config/constants';
+import { getEventsNeedingNotifications, clearNotificationState } from './utils/notificationPersistence';
 
 declare global {
   var notificationTimeouts: Map<string, NodeJS.Timeout[]>;
@@ -84,8 +85,19 @@ function clearScheduledNotifications(): void {
 
 export async function scheduleNotifications(): Promise<void> {
   clearScheduledNotifications();
-  const events = await getStoredEvents();
-  if (events.length === 0) return;
+
+  let events = await getStoredEvents();
+
+  if (events.length === 0) {
+    const restoredEvents = await getEventsNeedingNotifications();
+    if (restoredEvents.length > 0) {
+      console.log(`Restoring ${restoredEvents.length} events from persisted state`);
+      events = restoredEvents;
+    } else {
+      return;
+    }
+  }
+
   const groups = groupEvents(events);
 
   const sortedGroupEntries = Array.from(groups.entries()).sort((a, b) => {
@@ -126,6 +138,8 @@ export async function scheduleNotifications(): Promise<void> {
     });
     globalThis.notificationTimeouts.set(groupKey, timeoutIds);
   }
+
+  await clearNotificationState();
 }
 
 async function updateCalendarAlert(msg: Message | null, originalGroup: CalendarEvent[]): Promise<void> {
