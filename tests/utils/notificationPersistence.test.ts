@@ -4,7 +4,6 @@ import {
   loadNotificationState,
   shouldRestoreNotifications,
   getEventsNeedingNotifications,
-  clearNotificationState,
 } from '../../src/utils/notificationPersistence';
 import { CalendarEvent } from '../../src/models/event';
 import { promises as fs } from 'fs';
@@ -135,19 +134,4 @@ describe('Notification Persistence', () => {
     });
   });
 
-  describe('State Cleanup', () => {
-    it('should clear state file', async () => {
-      const groups = new Map<string, CalendarEvent[]>();
-      await saveNotificationState(groups, new Map());
-
-      await clearNotificationState();
-
-      const exists = await fs.access(STATE_FILE).then(() => true).catch(() => false);
-      expect(exists).toBe(false);
-    });
-
-    it('should handle missing file gracefully', async () => {
-      await expect(clearNotificationState()).resolves.not.toThrow();
-    });
-  });
 });

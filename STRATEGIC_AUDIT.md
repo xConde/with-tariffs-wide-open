@@ -328,3 +328,16 @@ the cron self-heals.
 **For Weakness 3:** Accepted risk for now. A shared constants approach would add
 coupling between validation and notification for marginal benefit. The test coverage
 on `normalizeMarketWatchMonth` documents the 12 formats explicitly.
+
+---
+
+## Deployment Checklist
+
+Final steps to take this branch from "started" to "shippable."
+
+- [ ] **1. Remove dead `clearNotificationState` export** — function in
+      `notificationPersistence.ts` is exported but never imported. Superseded by
+      `saveNotificationState` which overwrites previous state.
+- [ ] **2. Final validation** — `npm run build` + `npm test`, zero errors, 112+ tests.
+- [ ] **3. Create PR** — `feat/velocity-reliability-fixes` → `master` with full
+      summary of all fixes across both sprints and both Red Team passes.

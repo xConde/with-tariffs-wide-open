@@ -102,14 +102,3 @@ export async function getEventsNeedingNotifications(): Promise<CalendarEvent[]> 
 
   return allEvents;
 }
-
-/**
- * Clears persisted notification state (called after successful scheduling)
- */
-export async function clearNotificationState(): Promise<void> {
-  try {
-    await fs.unlink(NOTIFICATION_STATE_FILE);
-  } catch {
-    // File might not exist
-  }
-}
