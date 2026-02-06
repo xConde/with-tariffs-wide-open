@@ -42,7 +42,9 @@ export async function saveNotificationState(
     });
 
     await fs.mkdir(path.dirname(NOTIFICATION_STATE_FILE), { recursive: true });
-    await fs.writeFile(NOTIFICATION_STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
+    const tempFile = `${NOTIFICATION_STATE_FILE}.tmp`;
+    await fs.writeFile(tempFile, JSON.stringify(state, null, 2), 'utf8');
+    await fs.rename(tempFile, NOTIFICATION_STATE_FILE);
   } catch (error) {
     console.error('Error saving notification state:', error);
   }
@@ -99,15 +101,4 @@ export async function getEventsNeedingNotifications(): Promise<CalendarEvent[]> 
   });
 
   return allEvents;
-}
-
-/**
- * Clears persisted notification state (called after successful scheduling)
- */
-export async function clearNotificationState(): Promise<void> {
-  try {
-    await fs.unlink(NOTIFICATION_STATE_FILE);
-  } catch {
-    // File might not exist
-  }
 }

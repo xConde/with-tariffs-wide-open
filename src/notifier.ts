@@ -8,17 +8,36 @@ import { scrapeEconomicCalendar } from './scraper';
 import { buildNotificationEmbed, buildUpdatedNotificationEmbed } from './events/notifierMessage';
 import { sendEmbed } from './discordBot';
 import {
-  EST_TIMEZONE,
+  SOURCE_TIMEZONE,
   NOTIFICATION_EARLY_WARNING_MINUTES,
   NOTIFICATION_FINAL_WARNING_MINUTES,
   POST_EVENT_UPDATE_DELAY_MS,
 } from './config/constants';
-import { getEventsNeedingNotifications, clearNotificationState } from './utils/notificationPersistence';
+import { getEventsNeedingNotifications, saveNotificationState } from './utils/notificationPersistence';
 
 declare global {
   var notificationTimeouts: Map<string, NodeJS.Timeout[]>;
 }
 globalThis.notificationTimeouts = globalThis.notificationTimeouts || new Map();
+
+/**
+ * MarketWatch uses inconsistent month formats: "JAN.", "FEB.", "MAY", "JUNE", "SEPT." etc.
+ * Normalize to full month names so date-fns parse() with 'MMMM' works reliably.
+ */
+export const MONTH_NORMALIZATION: Record<string, string> = {
+  'JAN.': 'January', 'FEB.': 'February', 'MAR.': 'March', 'APR.': 'April',
+  'MAY': 'May', 'JUNE': 'June', 'JULY': 'July', 'AUG.': 'August',
+  'SEPT.': 'September', 'OCT.': 'October', 'NOV.': 'November', 'DEC.': 'December',
+};
+
+export function normalizeMarketWatchMonth(dayMonth: string): string {
+  for (const [abbrev, full] of Object.entries(MONTH_NORMALIZATION)) {
+    if (dayMonth.toUpperCase().startsWith(abbrev)) {
+      return dayMonth.toUpperCase().replace(abbrev, full);
+    }
+  }
+  return dayMonth;
+}
 
 function fixTimeString(time: string): string {
   return /^\d{1,2}:\d{2}(am|pm)$/i.test(time)
@@ -27,7 +46,7 @@ function fixTimeString(time: string): string {
 }
 
 function getEasternOffsetString(date: Date): string {
-  const offsetMs = getTimezoneOffset(EST_TIMEZONE, date);
+  const offsetMs = getTimezoneOffset(SOURCE_TIMEZONE, date);
   const offsetHours = offsetMs / (60 * 60 * 1000);
   const sign = offsetHours >= 0 ? '+' : '-';
   const absHours = Math.abs(offsetHours);
@@ -35,8 +54,13 @@ function getEasternOffsetString(date: Date): string {
 }
 
 function parseEventDateTime(event: CalendarEvent): Date | null {
+  if (!event.time || event.time === 'TBA') return null;
+
   const parts = event.date.split(',');
-  const dayMonth = parts[1]?.trim() || '';
+  const rawDayMonth = parts[1]?.trim() || '';
+  if (!rawDayMonth) return null;
+
+  const dayMonth = normalizeMarketWatchMonth(rawDayMonth);
   const year = new Date().getFullYear();
   const fixedTime = fixTimeString(event.time);
   const baseStr = `${dayMonth} ${year} ${fixedTime}`;
@@ -132,14 +156,16 @@ export async function scheduleNotifications(): Promise<void> {
         }, delay);
         timeoutIds.push(timeoutId);
         console.log(
-          `Scheduled notification for ${nt.toLocaleString('en-US', { timeZone: EST_TIMEZONE })} in ${(delay / 1000).toFixed(1)}s`
+          `Scheduled notification for ${nt.toLocaleString('en-US', { timeZone: SOURCE_TIMEZONE })} in ${(delay / 1000).toFixed(1)}s`
         );
       }
     });
     globalThis.notificationTimeouts.set(groupKey, timeoutIds);
   }
 
-  await clearNotificationState();
+  // Persist scheduled state so notifications survive restarts.
+  // saveNotificationState overwrites any previous state, so no explicit clear is needed.
+  await saveNotificationState(groups, globalThis.notificationTimeouts);
 }
 
 async function updateCalendarAlert(msg: Message | null, originalGroup: CalendarEvent[]): Promise<void> {
@@ -169,6 +195,19 @@ async function updateCalendarAlert(msg: Message | null, originalGroup: CalendarE
 
 export async function refreshNotifications(): Promise<void> {
   await scheduleNotifications();
+}
+
+/**
+ * Persists current notification state to disk (called during shutdown)
+ */
+export async function persistCurrentNotifications(): Promise<void> {
+  if (globalThis.notificationTimeouts.size === 0) return;
+
+  const events = await getStoredEvents();
+  if (events.length === 0) return;
+
+  const groups = groupEvents(events);
+  await saveNotificationState(groups, globalThis.notificationTimeouts);
 }
 
 /**

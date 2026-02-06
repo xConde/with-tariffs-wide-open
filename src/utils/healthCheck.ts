@@ -28,8 +28,8 @@ async function writeHeartbeat(): Promise<void> {
 /**
  * Starts periodic heartbeat updates
  */
-export function startHeartbeat(): NodeJS.Timeout {
-  writeHeartbeat(); // Write immediately
+export async function startHeartbeat(): Promise<NodeJS.Timeout> {
+  await writeHeartbeat(); // Write immediately and wait for file to exist
 
   heartbeatInterval = setInterval(() => {
     writeHeartbeat();
