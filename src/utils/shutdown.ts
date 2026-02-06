@@ -23,6 +23,15 @@ async function gracefulShutdown(signal: string): Promise<void> {
   console.log(`\nReceived ${signal}, starting graceful shutdown...`);
 
   try {
+    console.log('Running registered cleanup handlers...');
+    for (const handler of cleanupHandlers) {
+      try {
+        await handler();
+      } catch (error) {
+        console.error('Error in cleanup handler:', error);
+      }
+    }
+
     console.log('Clearing notification timeouts...');
     if (globalThis.notificationTimeouts) {
       globalThis.notificationTimeouts.forEach(timeouts => {
@@ -34,15 +43,6 @@ async function gracefulShutdown(signal: string): Promise<void> {
     console.log('Clearing calendar cache...');
     if (globalThis.calendarCache) {
       globalThis.calendarCache.clear();
-    }
-
-    console.log('Running registered cleanup handlers...');
-    for (const handler of cleanupHandlers) {
-      try {
-        await handler();
-      } catch (error) {
-        console.error('Error in cleanup handler:', error);
-      }
     }
 
     console.log('Closing Discord client...');

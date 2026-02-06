@@ -14,13 +14,6 @@ let reconnectAttempts = 0;
 
 export { discordClient };
 
-export async function sendDiscordAlert(message: string): Promise<void> {
-  const channel = await discordClient.channels.fetch(CHANNEL_ID) as TextChannel;
-  if (channel) {
-    await channel.send(message);
-  }
-}
-
 export async function sendEmbed(embed: EmbedBuilder): Promise<Message | null> {
   try {
     const channel = await discordClient.channels.fetch(CHANNEL_ID) as TextChannel;
@@ -105,7 +98,7 @@ export async function initializeDiscordBot(): Promise<void> {
           new ButtonBuilder().setCustomId('calendar_prev').setLabel('Previous page').setStyle(ButtonStyle.Secondary).setDisabled(currentPage === 0),
           new ButtonBuilder().setCustomId('calendar_next').setLabel('Next page').setStyle(ButtonStyle.Secondary).setDisabled(currentPage === pages.length - 1),
         );
-        globalThis.calendarCache.set(messageId, { pages, currentPage });
+        globalThis.calendarCache?.set(messageId, { pages, currentPage, timestamp: cache.timestamp });
         await interaction.update({ embeds: [embed], components: [row] });
       }
     } catch (error) {

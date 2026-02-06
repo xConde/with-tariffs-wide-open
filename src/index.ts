@@ -1,8 +1,8 @@
 import './globalSetup';
-import { waitForInitialSetup } from './globalSetup';
+import { waitForInitialSetup, validateEnvironment } from './globalSetup';
 import { initializeDiscordBot } from './discordBot';
 import { startScheduler } from './scheduler';
-import { initializeNotifications } from './notifier';
+import { initializeNotifications, persistCurrentNotifications } from './notifier';
 import { schedulePeriodicCleanup } from './utils/cacheCleanup';
 import { setupGracefulShutdown, registerCleanupHandler } from './utils/shutdown';
 import { startHeartbeat, stopHeartbeat } from './utils/healthCheck';
@@ -14,6 +14,7 @@ let heartbeatInterval: NodeJS.Timeout;
 async function startApp() {
   try {
     setupGracefulShutdown();
+    validateEnvironment();
 
     await waitForInitialSetup();
     console.log('Initial setup complete');
@@ -29,6 +30,7 @@ async function startApp() {
     startScheduler();
 
     await initializeNotifications();
+    registerCleanupHandler(() => persistCurrentNotifications());
     console.log('Notifications scheduled');
 
     cleanupInterval = schedulePeriodicCleanup();
@@ -39,7 +41,7 @@ async function startApp() {
     });
     console.log('Periodic cache cleanup scheduled');
 
-    heartbeatInterval = startHeartbeat();
+    heartbeatInterval = await startHeartbeat();
     registerCleanupHandler(() => {
       stopHeartbeat();
     });

@@ -15,9 +15,7 @@ describe('Health Check System', () => {
     });
 
     it('should create heartbeat file on start', async () => {
-      startHeartbeat();
-
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await startHeartbeat();
 
       const path = getHeartbeatPath();
       try {
@@ -35,8 +33,8 @@ describe('Health Check System', () => {
       }
     });
 
-    it('should stop heartbeat cleanly', () => {
-      const interval = startHeartbeat();
+    it('should stop heartbeat cleanly', async () => {
+      const interval = await startHeartbeat();
       expect(interval).toBeDefined();
 
       stopHeartbeat();
@@ -46,8 +44,7 @@ describe('Health Check System', () => {
 
   describe('Health Check', () => {
     it('should return healthy status with recent heartbeat', async () => {
-      startHeartbeat();
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await startHeartbeat();
 
       const health = await checkHealth();
       expect(health.healthy).toBe(true);
@@ -65,8 +62,7 @@ describe('Health Check System', () => {
 
   describe('Heartbeat Data', () => {
     it('should include timestamp', async () => {
-      startHeartbeat();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await startHeartbeat();
 
       const data = await fs.readFile(getHeartbeatPath(), 'utf8');
       const parsed = JSON.parse(data);
@@ -78,8 +74,7 @@ describe('Health Check System', () => {
     });
 
     it('should include uptime', async () => {
-      startHeartbeat();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await startHeartbeat();
 
       const data = await fs.readFile(getHeartbeatPath(), 'utf8');
       const parsed = JSON.parse(data);

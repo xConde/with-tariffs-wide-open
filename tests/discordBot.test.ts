@@ -1,76 +1,46 @@
 import { describe, it, expect } from '@jest/globals';
+import {
+  MAX_RECONNECT_ATTEMPTS,
+  RECONNECT_BASE_DELAY_MS,
+} from '../src/config/constants';
 
 describe('Discord Bot Reliability', () => {
   describe('Reconnect Configuration', () => {
-    it('should have reconnect delay configured', () => {
-      const RECONNECT_DELAY_MS = 5000;
-      expect(RECONNECT_DELAY_MS).toBeGreaterThan(0);
-      expect(RECONNECT_DELAY_MS).toBeLessThanOrEqual(10000);
+    it('should have a positive base delay', () => {
+      expect(RECONNECT_BASE_DELAY_MS).toBeGreaterThan(0);
     });
 
-    it('should have max reconnect attempts', () => {
-      const MAX_RECONNECT_ATTEMPTS = 5;
+    it('should have a reasonable max reconnect attempts', () => {
       expect(MAX_RECONNECT_ATTEMPTS).toBeGreaterThan(0);
       expect(MAX_RECONNECT_ATTEMPTS).toBeLessThanOrEqual(10);
     });
 
-    it('should use exponential backoff for reconnects', () => {
-      const baseDelay = 5000;
-      const attempts = [1, 2, 3];
+    it('should produce increasing delays with linear backoff', () => {
+      const delays: number[] = [];
+      for (let attempt = 1; attempt <= MAX_RECONNECT_ATTEMPTS; attempt++) {
+        delays.push(RECONNECT_BASE_DELAY_MS * attempt);
+      }
 
-      attempts.forEach(attempt => {
-        const delay = baseDelay * attempt;
-        expect(delay).toBe(baseDelay * attempt);
-      });
-    });
-  });
+      for (let i = 1; i < delays.length; i++) {
+        expect(delays[i]).toBeGreaterThan(delays[i - 1]);
+      }
 
-  describe('Discord Event Handlers', () => {
-    it('should handle disconnect events', () => {
-      const eventName = 'disconnect';
-      expect(eventName).toBe('disconnect');
+      expect(delays[delays.length - 1]).toBe(
+        RECONNECT_BASE_DELAY_MS * MAX_RECONNECT_ATTEMPTS
+      );
     });
 
-    it('should handle error events', () => {
-      const eventName = 'error';
-      expect(eventName).toBe('error');
+    it('should cap total reconnect wait time below 3 minutes', () => {
+      // discordBot.ts uses delay = RECONNECT_BASE_DELAY_MS * attempt
+      // Total wait = base * (1 + 2 + ... + MAX) = base * MAX*(MAX+1)/2
+      const totalMs = RECONNECT_BASE_DELAY_MS * MAX_RECONNECT_ATTEMPTS * (MAX_RECONNECT_ATTEMPTS + 1) / 2;
+      expect(totalMs).toBeLessThan(180000); // 3 minutes
     });
 
-    it('should handle shard events', () => {
-      const shardEvents = ['shardError', 'shardDisconnect', 'shardReconnecting', 'shardResume'];
-      expect(shardEvents.length).toBe(4);
-    });
-  });
-
-  describe('Reconnect Logic', () => {
-    it('should reset attempts counter on successful connection', () => {
-      let reconnectAttempts = 3;
-      reconnectAttempts = 0; // Reset after successful reconnect
-
-      expect(reconnectAttempts).toBe(0);
-    });
-
-    it('should increment attempts on failure', () => {
-      let reconnectAttempts = 0;
-      reconnectAttempts++;
-
-      expect(reconnectAttempts).toBe(1);
-    });
-
-    it('should stop reconnecting after max attempts', () => {
-      const MAX_RECONNECT_ATTEMPTS = 5;
-      const reconnectAttempts = 5;
-
-      const shouldStop = reconnectAttempts >= MAX_RECONNECT_ATTEMPTS;
-      expect(shouldStop).toBe(true);
-    });
-  });
-
-  describe('Connection State', () => {
-    it('should track connection status', () => {
-      const states = ['ready', 'connecting', 'disconnected'];
-      expect(states).toContain('ready');
-      expect(states).toContain('disconnected');
+    it('should match expected constant values', () => {
+      // Guard against accidental edits to critical reconnect constants
+      expect(MAX_RECONNECT_ATTEMPTS).toBe(5);
+      expect(RECONNECT_BASE_DELAY_MS).toBe(5000);
     });
   });
 });

@@ -7,7 +7,7 @@ import { formatTimeWithTimezone } from '../utils/timezoneDisplay';
 import { parse } from 'date-fns';
 
 declare global {
-  var calendarCache: Map<string, { pages: string[][]; currentPage: number }>;
+  var calendarCache: Map<string, { pages: string[][]; currentPage: number; timestamp: number }>;
 }
 globalThis.calendarCache = globalThis.calendarCache || new Map();
 
@@ -177,7 +177,7 @@ export const calendarCommand = {
         ? await interaction.editReply({ embeds: [embed], components: [row] })
         : await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
 
-      globalThis.calendarCache.set(message.id, { pages, currentPage });
+      globalThis.calendarCache.set(message.id, { pages, currentPage, timestamp: Date.now() });
     } catch (error) {
       console.error('Error in /calendar command:', error);
       if (interaction.deferred || interaction.replied) {

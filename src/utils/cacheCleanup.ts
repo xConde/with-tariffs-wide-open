@@ -9,30 +9,20 @@ interface CacheEntry {
 /**
  * Cleans up old entries from the calendar cache based on age and size limits
  */
-export function cleanupCalendarCache(cache: Map<string, { pages: string[][]; currentPage: number }>): void {
+export function cleanupCalendarCache(cache: Map<string, CacheEntry>): void {
   const now = Date.now();
   const entriesToDelete: string[] = [];
 
-  // Convert to entries with timestamps
-  const entriesWithTimestamps = new Map<string, CacheEntry>();
-  cache.forEach((value, key) => {
-    entriesWithTimestamps.set(key, {
-      ...value,
-      timestamp: now, // In production, we'd store actual timestamps
-    });
-  });
-
-  // Remove entries older than max age
-  cache.forEach((_, key) => {
-    const entry = entriesWithTimestamps.get(key);
-    if (entry && now - entry.timestamp > CALENDAR_CACHE_MAX_AGE_MS) {
+  // Remove entries older than max age using actual stored timestamps
+  cache.forEach((entry, key) => {
+    if (now - entry.timestamp > CALENDAR_CACHE_MAX_AGE_MS) {
       entriesToDelete.push(key);
     }
   });
 
   // If still over size limit, remove oldest entries
   if (cache.size - entriesToDelete.length > CALENDAR_CACHE_MAX_SIZE) {
-    const sortedEntries = Array.from(entriesWithTimestamps.entries())
+    const sortedEntries = Array.from(cache.entries())
       .filter(([key]) => !entriesToDelete.includes(key))
       .sort((a, b) => a[1].timestamp - b[1].timestamp);
 

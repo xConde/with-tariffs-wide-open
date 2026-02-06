@@ -15,7 +15,6 @@ export const POST_EVENT_UPDATE_DELAY_MS = 90000; // 90 seconds
 // Timezone
 export const SOURCE_TIMEZONE = 'America/New_York'; // MarketWatch data is in ET
 export const DISPLAY_TIMEZONE = process.env.DISPLAY_TIMEZONE || 'America/Chicago'; // User display preference
-export const EST_TIMEZONE = 'America/New_York'; // Deprecated, use SOURCE_TIMEZONE
 
 // Scheduler settings
 export const DAILY_SCRAPE_SCHEDULE = '0 3 * * *'; // 3 AM daily

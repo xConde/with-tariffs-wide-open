@@ -46,10 +46,16 @@ export async function waitForInitialSetup(): Promise<void> {
   }
 }
 
-const requiredEnvVars = ['DISCORD_TOKEN', 'DISCORD_CHANNEL_ID', 'CLIENT_ID'];
-for (const varName of requiredEnvVars) {
-  if (!process.env[varName]) {
-    console.error(`Missing required environment variable: ${varName}`);
-    process.exit(1);
+const REQUIRED_ENV_VARS = ['DISCORD_TOKEN', 'DISCORD_CHANNEL_ID', 'CLIENT_ID'];
+
+/**
+ * Validates that all required environment variables are set.
+ * Call this explicitly during startup rather than at module load time,
+ * so shutdown handlers are registered before any process.exit().
+ */
+export function validateEnvironment(): void {
+  const missing = REQUIRED_ENV_VARS.filter(v => !process.env[v]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
 }
