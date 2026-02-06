@@ -335,9 +335,9 @@ on `normalizeMarketWatchMonth` documents the 12 formats explicitly.
 
 Final steps to take this branch from "started" to "shippable."
 
-- [ ] **1. Remove dead `clearNotificationState` export** — function in
+- [x] **1. Remove dead `clearNotificationState` export** — function in
       `notificationPersistence.ts` is exported but never imported. Superseded by
       `saveNotificationState` which overwrites previous state.
-- [ ] **2. Final validation** — `npm run build` + `npm test`, zero errors, 112+ tests.
-- [ ] **3. Create PR** — `feat/velocity-reliability-fixes` → `master` with full
-      summary of all fixes across both sprints and both Red Team passes.
+- [x] **2. Final validation** — `npm run build` + `npm test`, zero errors, 13 suites, 110 tests.
+- [x] **3. Create PR** — `feat/velocity-reliability-fixes` → `master`:
+      https://github.com/xConde/with-tariffs-wide-open/pull/2
