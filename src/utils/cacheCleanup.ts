@@ -1,4 +1,4 @@
-import { CALENDAR_CACHE_MAX_AGE_MS, CALENDAR_CACHE_MAX_SIZE } from '../config/constants';
+import { CALENDAR_CACHE_MAX_AGE_MS, CALENDAR_CACHE_MAX_SIZE, NOTIFICATION_TIMEOUT_CLEANUP_MS, CACHE_CLEANUP_INTERVAL_MS } from '../config/constants';
 
 interface CacheEntry {
   pages: string[][];
@@ -48,8 +48,7 @@ export function cleanupNotificationTimeouts(
   timeoutMap.forEach((timeouts, key) => {
     const eventTime = new Date(key);
 
-    // If event time is more than 2 hours in the past, cleanup
-    if (now - eventTime.getTime() > 7200000) {
+    if (now - eventTime.getTime() > NOTIFICATION_TIMEOUT_CLEANUP_MS) {
       timeouts.forEach(timeout => clearTimeout(timeout));
       keysToDelete.push(key);
     }
@@ -62,8 +61,6 @@ export function cleanupNotificationTimeouts(
  * Schedules periodic cleanup of global caches
  */
 export function schedulePeriodicCleanup(): NodeJS.Timeout {
-  const CLEANUP_INTERVAL_MS = 3600000; // 1 hour
-
   return setInterval(() => {
     if (globalThis.calendarCache) {
       cleanupCalendarCache(globalThis.calendarCache);
@@ -71,5 +68,5 @@ export function schedulePeriodicCleanup(): NodeJS.Timeout {
     if (globalThis.notificationTimeouts) {
       cleanupNotificationTimeouts(globalThis.notificationTimeouts);
     }
-  }, CLEANUP_INTERVAL_MS);
+  }, CACHE_CLEANUP_INTERVAL_MS);
 }

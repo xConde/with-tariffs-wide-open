@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { CalendarEvent } from '../../models/event';
-import { SCRAPER_URL, SCRAPER_USER_AGENTS, SCRAPER_TIMEOUT_MS } from '../../config/constants';
+import { SCRAPER_URL, SCRAPER_USER_AGENTS, SCRAPER_TIMEOUT_MS, SCRAPER_MAX_RESPONSE_BYTES } from '../../config/constants';
 import { ICalendarScraper } from './ICalendarScraper';
 import { createLogger } from '../../utils/logger';
 
@@ -38,6 +38,8 @@ export class MarketWatchScraper implements ICalendarScraper {
           'Referer': 'https://www.marketwatch.com/'
         },
         timeout: SCRAPER_TIMEOUT_MS,
+        maxContentLength: SCRAPER_MAX_RESPONSE_BYTES,
+        maxRedirects: 3,
       });
 
       const $ = cheerio.load(html);

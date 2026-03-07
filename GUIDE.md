@@ -76,7 +76,7 @@ src/
 
 ### Quick Test
 ```bash
-npm test                    # 106 tests, ~7s
+npm test                    # 202 tests, ~7s
 npm run test:watch          # Watch mode
 ```
 
@@ -176,6 +176,14 @@ npm run test:live-scrape    # Scraper works
 npm run test:full-flow      # E2E passes
 ```
 
+### Docker
+```bash
+docker build -t calendar-bot .
+docker run -d --name calendar-bot --env-file .env calendar-bot
+```
+
+The Dockerfile uses a multi-stage build with a non-root user. Health checks monitor `heartbeat.txt` freshness (stale after 2 minutes = unhealthy).
+
 ### Production Start
 
 **With PM2:**
@@ -272,7 +280,7 @@ npm run start              # Deploy commands + start bot
 
 ### Testing
 ```bash
-npm test                   # All 106 tests
+npm test                   # All 202 tests
 npm run test:live-scrape   # Scraper validation
 npm run test:trigger-cron  # Cron test (60s)
 npm run test:trigger-notif # Notification test (1min)
@@ -298,6 +306,8 @@ npm run test:view-data             # View stored events
 | `FALLBACK_CHANNEL_ID` | - | Backup channel |
 | `DISPLAY_TIMEZONE` | - | User timezone (default: CT) |
 | `FAKE_DATE` | - | Override time (testing) |
+| `LOG_LEVEL` | - | Logging threshold (`debug`, `info`, `warn`, `error`; default: `info`) |
+| `LOG_FORMAT` | - | Log output format (`text` or `json`; default: `text`) |
 
 **Timezones:** America/New_York, America/Chicago, America/Denver, America/Los_Angeles, etc.
 
@@ -314,7 +324,7 @@ npm run test:view-data             # View stored events
 ## Performance
 
 - Scraper: ~250ms (< 15s max)
-- Tests: ~7s (106 tests)
+- Tests: ~7s (202 tests)
 - Build: ~2s
 - Memory: ~150MB (with cleanup)
 

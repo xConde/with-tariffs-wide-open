@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ActionR
 import { getStoredEvents, saveEvents } from '../storage';
 import { scrapeEconomicCalendar } from '../scraper';
 import { CalendarEvent } from '../models/event';
-import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT, SOURCE_TIMEZONE, DISPLAY_TIMEZONE } from '../config/constants';
+import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT, SOURCE_TIMEZONE, DISPLAY_TIMEZONE, CALENDAR_CACHE_MAX_SIZE } from '../config/constants';
 import { formatTimeWithTimezone } from '../utils/timezoneDisplay';
 import { parse } from 'date-fns';
 import { parseDateHeader, normalizeMarketWatchMonth, fixTimeString } from '../utils/dateParser';
@@ -160,6 +160,17 @@ export const calendarCommand = {
         ? await interaction.editReply({ embeds: [embed], components: [row] })
         : await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
 
+      if (globalThis.calendarCache.size >= CALENDAR_CACHE_MAX_SIZE) {
+        let oldestKey: string | null = null;
+        let oldestTime = Infinity;
+        for (const [key, entry] of globalThis.calendarCache) {
+          if (entry.timestamp < oldestTime) {
+            oldestTime = entry.timestamp;
+            oldestKey = key;
+          }
+        }
+        if (oldestKey) globalThis.calendarCache.delete(oldestKey);
+      }
       globalThis.calendarCache.set(message.id, { pages, currentPage, timestamp: Date.now() });
     } catch (error) {
       log.error('Error in /calendar command', { error: String(error) });

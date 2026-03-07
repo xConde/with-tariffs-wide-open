@@ -1,4 +1,5 @@
 import { CalendarEvent } from '../models/event';
+import { SCRAPER_MIN_EVENTS, SCRAPER_MAX_EVENTS } from '../config/constants';
 import { createLogger } from './logger';
 
 const log = createLogger('validation');
@@ -100,9 +101,13 @@ export function shouldAcceptScrapedData(events: CalendarEvent[]): boolean {
     return false;
   }
 
-  // Minimum threshold: should have at least 5 events
-  if (events.length < 5) {
+  if (events.length < SCRAPER_MIN_EVENTS) {
     log.warn(`Only ${events.length} events scraped (expected 20+). Rejecting.`);
+    return false;
+  }
+
+  if (events.length > SCRAPER_MAX_EVENTS) {
+    log.error(`Abnormal event count: ${events.length} (max ${SCRAPER_MAX_EVENTS}). Rejecting as potentially malicious.`);
     return false;
   }
 

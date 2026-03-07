@@ -122,19 +122,27 @@ export async function scheduleNotifications(): Promise<void> {
       if (delay > 0) {
         const windowMinutes = (nt.getTime() === notifTime30.getTime()) ? NOTIFICATION_EARLY_WARNING_MINUTES : NOTIFICATION_FINAL_WARNING_MINUTES;
         const timeoutId = setTimeout(async () => {
-          if (windowMinutes === NOTIFICATION_FINAL_WARNING_MINUTES) {
-            const embed = buildNotificationEmbed(windowMinutes, groupEvents);
-            const msg = await sendEmbed(embed);
-            const postEventTimeout = setTimeout(async () => {
-              await updateCalendarAlert(msg, groupEvents);
-            }, POST_EVENT_UPDATE_DELAY_MS);
-            // Track post-event timeout so it's cleared on shutdown
-            const existing = globalThis.notificationTimeouts.get(groupKey) || [];
-            existing.push(postEventTimeout);
-            globalThis.notificationTimeouts.set(groupKey, existing);
-          } else {
-            const embed = buildNotificationEmbed(windowMinutes, groupEvents);
-            await sendEmbed(embed);
+          try {
+            if (windowMinutes === NOTIFICATION_FINAL_WARNING_MINUTES) {
+              const embed = buildNotificationEmbed(windowMinutes, groupEvents);
+              const msg = await sendEmbed(embed);
+              const postEventTimeout = setTimeout(async () => {
+                try {
+                  await updateCalendarAlert(msg, groupEvents);
+                } catch (error) {
+                  log.error('Post-event update failed', { error: String(error), groupKey });
+                }
+              }, POST_EVENT_UPDATE_DELAY_MS);
+              // Track post-event timeout so it's cleared on shutdown
+              const existing = globalThis.notificationTimeouts.get(groupKey) || [];
+              existing.push(postEventTimeout);
+              globalThis.notificationTimeouts.set(groupKey, existing);
+            } else {
+              const embed = buildNotificationEmbed(windowMinutes, groupEvents);
+              await sendEmbed(embed);
+            }
+          } catch (error) {
+            log.error('Notification send failed', { error: String(error), groupKey, windowMinutes });
           }
         }, delay);
         timeoutIds.push(timeoutId);
