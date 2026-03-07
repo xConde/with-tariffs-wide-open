@@ -1,6 +1,9 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { HEARTBEAT_INTERVAL_MS, HEARTBEAT_MAX_AGE_MS } from '../config/constants';
+import { createLogger } from './logger';
+
+const log = createLogger('health');
 
 const HEARTBEAT_FILE = path.join(__dirname, '../../heartbeat.txt');
 
@@ -21,7 +24,7 @@ async function writeHeartbeat(): Promise<void> {
 
     await fs.writeFile(HEARTBEAT_FILE, data, 'utf8');
   } catch (error) {
-    console.error('Failed to write heartbeat:', error);
+    log.error('Failed to write heartbeat', { error: String(error) });
   }
 }
 
@@ -35,7 +38,7 @@ export async function startHeartbeat(): Promise<NodeJS.Timeout> {
     writeHeartbeat();
   }, HEARTBEAT_INTERVAL_MS);
 
-  console.log(`Heartbeat started (updating every ${HEARTBEAT_INTERVAL_MS / 1000}s)`);
+  log.info(`Heartbeat started (updating every ${HEARTBEAT_INTERVAL_MS / 1000}s)`);
   return heartbeatInterval;
 }
 
@@ -46,7 +49,7 @@ export function stopHeartbeat(): void {
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);
     heartbeatInterval = null;
-    console.log('Heartbeat stopped');
+    log.info('Heartbeat stopped');
   }
 }
 

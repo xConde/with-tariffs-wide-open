@@ -1,6 +1,9 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { CalendarEvent } from '../models/event';
+import { createLogger } from './logger';
+
+const log = createLogger('persistence');
 
 const NOTIFICATION_STATE_FILE = path.join(__dirname, '../../data/notification-state.json');
 
@@ -46,7 +49,7 @@ export async function saveNotificationState(
     await fs.writeFile(tempFile, JSON.stringify(state, null, 2), 'utf8');
     await fs.rename(tempFile, NOTIFICATION_STATE_FILE);
   } catch (error) {
-    console.error('Error saving notification state:', error);
+    log.error('Error saving notification state', { error: String(error) });
   }
 }
 
@@ -69,7 +72,7 @@ export async function loadNotificationState(): Promise<NotificationState | null>
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
       return null;
     }
-    console.error('Error loading notification state:', error);
+    log.error('Error loading notification state', { error: String(error) });
     return null;
   }
 }

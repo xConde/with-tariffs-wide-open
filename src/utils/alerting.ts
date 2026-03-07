@@ -1,5 +1,8 @@
 import { discordClient } from '../core/discordClient';
 import { EmbedBuilder } from 'discord.js';
+import { createLogger } from './logger';
+
+const log = createLogger('alerting');
 
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
 
@@ -8,14 +11,14 @@ const ADMIN_USER_ID = process.env.ADMIN_USER_ID;
  */
 export async function sendAdminAlert(message: string, details?: string): Promise<boolean> {
   if (!ADMIN_USER_ID) {
-    console.warn('ADMIN_USER_ID not configured - skipping admin alert');
+    log.warn('ADMIN_USER_ID not configured - skipping admin alert');
     return false;
   }
 
   try {
     const user = await discordClient.users.fetch(ADMIN_USER_ID);
     if (!user) {
-      console.error('Admin user not found');
+      log.error('Admin user not found');
       return false;
     }
 
@@ -30,10 +33,10 @@ export async function sendAdminAlert(message: string, details?: string): Promise
     }
 
     await user.send({ embeds: [embed] });
-    console.log('Admin alert sent successfully');
+    log.info('Admin alert sent successfully');
     return true;
   } catch (error) {
-    console.error('Failed to send admin alert:', error);
+    log.error('Failed to send admin alert', { error: String(error) });
     return false;
   }
 }

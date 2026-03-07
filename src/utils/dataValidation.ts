@@ -1,4 +1,7 @@
 import { CalendarEvent } from '../models/event';
+import { createLogger } from './logger';
+
+const log = createLogger('validation');
 
 interface ValidationResult {
   valid: boolean;
@@ -93,14 +96,13 @@ export function shouldAcceptScrapedData(events: CalendarEvent[]): boolean {
   const validation = validateEvents(events);
 
   if (!validation.valid) {
-    console.error('Scraped data failed validation:');
-    validation.errors.forEach(err => console.error(`  - ${err}`));
+    log.error('Scraped data failed validation', { errors: validation.errors.join('; ') });
     return false;
   }
 
   // Minimum threshold: should have at least 5 events
   if (events.length < 5) {
-    console.warn(`Only ${events.length} events scraped (expected 20+). Rejecting.`);
+    log.warn(`Only ${events.length} events scraped (expected 20+). Rejecting.`);
     return false;
   }
 

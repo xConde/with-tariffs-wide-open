@@ -1,5 +1,8 @@
 import { updateCalendarEvents } from './scheduler';
 import { getTimezoneOffset } from 'date-fns-tz';
+import { createLogger } from './utils/logger';
+
+const log = createLogger('setup');
 
 if (process.env.FAKE_DATE) {
   const fakeLocal = new Date(process.env.FAKE_DATE);
@@ -20,7 +23,7 @@ if (process.env.FAKE_DATE) {
     }
   } as typeof Date;
 
-  console.log(
+  log.info(
     `Set fake date: ${fakeUtc.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`
   );
 }
@@ -29,12 +32,12 @@ let rescrapePromise: Promise<void> | null = null;
 
 if (process.env.RESCRAPE === '1') {
   rescrapePromise = (async () => {
-    console.log('Manual rescrape enabled. Running updateCalendarEvents...');
+    log.info('Manual rescrape enabled. Running updateCalendarEvents...');
     try {
       await updateCalendarEvents();
-      console.log('Manual rescrape completed.');
+      log.info('Manual rescrape completed.');
     } catch (error) {
-      console.error('Error during manual rescrape:', error);
+      log.error('Error during manual rescrape', { error: String(error) });
       throw error;
     }
   })();
