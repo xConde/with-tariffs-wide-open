@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { normalizeMarketWatchMonth, MONTH_NORMALIZATION } from '../src/notifier';
+import { normalizeMarketWatchMonth, MONTH_NORMALIZATION } from '../src/utils/dateParser';
 
 describe('Notifier Date Normalization', () => {
   describe('normalizeMarketWatchMonth()', () => {
