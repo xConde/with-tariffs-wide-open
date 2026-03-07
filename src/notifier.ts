@@ -14,36 +14,15 @@ import {
   POST_EVENT_UPDATE_DELAY_MS,
 } from './config/constants';
 import { getEventsNeedingNotifications, saveNotificationState } from './utils/notificationPersistence';
+import { normalizeMarketWatchMonth, fixTimeString } from './utils/dateParser';
+import { createLogger } from './utils/logger';
+
+const log = createLogger('notifier');
 
 declare global {
   var notificationTimeouts: Map<string, NodeJS.Timeout[]>;
 }
 globalThis.notificationTimeouts = globalThis.notificationTimeouts || new Map();
-
-/**
- * MarketWatch uses inconsistent month formats: "JAN.", "FEB.", "MAY", "JUNE", "SEPT." etc.
- * Normalize to full month names so date-fns parse() with 'MMMM' works reliably.
- */
-export const MONTH_NORMALIZATION: Record<string, string> = {
-  'JAN.': 'January', 'FEB.': 'February', 'MAR.': 'March', 'APR.': 'April',
-  'MAY': 'May', 'JUNE': 'June', 'JULY': 'July', 'AUG.': 'August',
-  'SEPT.': 'September', 'OCT.': 'October', 'NOV.': 'November', 'DEC.': 'December',
-};
-
-export function normalizeMarketWatchMonth(dayMonth: string): string {
-  for (const [abbrev, full] of Object.entries(MONTH_NORMALIZATION)) {
-    if (dayMonth.toUpperCase().startsWith(abbrev)) {
-      return dayMonth.toUpperCase().replace(abbrev, full);
-    }
-  }
-  return dayMonth;
-}
-
-function fixTimeString(time: string): string {
-  return /^\d{1,2}:\d{2}(am|pm)$/i.test(time)
-    ? time.replace(/(am|pm)$/i, ' $1')
-    : time;
-}
 
 function getEasternOffsetString(date: Date): string {
   const offsetMs = getTimezoneOffset(SOURCE_TIMEZONE, date);
@@ -115,7 +94,7 @@ export async function scheduleNotifications(): Promise<void> {
   if (events.length === 0) {
     const restoredEvents = await getEventsNeedingNotifications();
     if (restoredEvents.length > 0) {
-      console.log(`Restoring ${restoredEvents.length} events from persisted state`);
+      log.info('Restoring events from persisted state', { count: restoredEvents.length });
       events = restoredEvents;
     } else {
       return;
@@ -143,21 +122,31 @@ export async function scheduleNotifications(): Promise<void> {
       if (delay > 0) {
         const windowMinutes = (nt.getTime() === notifTime30.getTime()) ? NOTIFICATION_EARLY_WARNING_MINUTES : NOTIFICATION_FINAL_WARNING_MINUTES;
         const timeoutId = setTimeout(async () => {
-          if (windowMinutes === NOTIFICATION_FINAL_WARNING_MINUTES) {
-            const embed = buildNotificationEmbed(windowMinutes, groupEvents);
-            const msg = await sendEmbed(embed);
-            setTimeout(async () => {
-              await updateCalendarAlert(msg, groupEvents);
-            }, POST_EVENT_UPDATE_DELAY_MS);
-          } else {
-            const embed = buildNotificationEmbed(windowMinutes, groupEvents);
-            await sendEmbed(embed);
+          try {
+            if (windowMinutes === NOTIFICATION_FINAL_WARNING_MINUTES) {
+              const embed = buildNotificationEmbed(windowMinutes, groupEvents);
+              const msg = await sendEmbed(embed);
+              const postEventTimeout = setTimeout(async () => {
+                try {
+                  await updateCalendarAlert(msg, groupEvents);
+                } catch (error) {
+                  log.error('Post-event update failed', { error: String(error), groupKey });
+                }
+              }, POST_EVENT_UPDATE_DELAY_MS);
+              // Track post-event timeout so it's cleared on shutdown
+              const existing = globalThis.notificationTimeouts.get(groupKey) || [];
+              existing.push(postEventTimeout);
+              globalThis.notificationTimeouts.set(groupKey, existing);
+            } else {
+              const embed = buildNotificationEmbed(windowMinutes, groupEvents);
+              await sendEmbed(embed);
+            }
+          } catch (error) {
+            log.error('Notification send failed', { error: String(error), groupKey, windowMinutes });
           }
         }, delay);
         timeoutIds.push(timeoutId);
-        console.log(
-          `Scheduled notification for ${nt.toLocaleString('en-US', { timeZone: SOURCE_TIMEZONE })} in ${(delay / 1000).toFixed(1)}s`
-        );
+        log.info('Scheduled notification', { time: nt.toLocaleString('en-US', { timeZone: SOURCE_TIMEZONE }), delaySeconds: Number((delay / 1000).toFixed(1)) });
       }
     });
     globalThis.notificationTimeouts.set(groupKey, timeoutIds);
@@ -184,12 +173,12 @@ async function updateCalendarAlert(msg: Message | null, originalGroup: CalendarE
 
     if (scrapedEvents.length > 0 && updatedGroup.length > 0) {
       await saveEvents(scrapedEvents);
-      console.log('Events updated and notifications refreshed.');
+      log.info('Events updated and notifications refreshed');
     } else {
-      console.log('Scrape returned no updated events for group.');
+      log.info('Scrape returned no updated events for group');
     }
   } catch (error) {
-    console.error('Error during scheduled update:', error);
+    log.error('Error during scheduled update', { error: String(error) });
   }
 }
 

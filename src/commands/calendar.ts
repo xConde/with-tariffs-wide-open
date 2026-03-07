@@ -2,36 +2,21 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, EmbedBuilder, ActionR
 import { getStoredEvents, saveEvents } from '../storage';
 import { scrapeEconomicCalendar } from '../scraper';
 import { CalendarEvent } from '../models/event';
-import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT, SOURCE_TIMEZONE, DISPLAY_TIMEZONE } from '../config/constants';
+import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT, SOURCE_TIMEZONE, DISPLAY_TIMEZONE, CALENDAR_CACHE_MAX_SIZE } from '../config/constants';
 import { formatTimeWithTimezone } from '../utils/timezoneDisplay';
 import { parse } from 'date-fns';
+import { parseDateHeader, normalizeMarketWatchMonth, fixTimeString } from '../utils/dateParser';
+import { createLogger } from '../utils/logger';
+export { parseDateHeader };
+
+const log = createLogger('calendar');
 
 declare global {
   var calendarCache: Map<string, { pages: string[][]; currentPage: number; timestamp: number }>;
 }
 globalThis.calendarCache = globalThis.calendarCache || new Map();
 
-function parseDateHeader(header: string): Date {
-  try {
-    const parts = header.split(',');
-    const dayMonth = parts[1]?.trim() || '';
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
-
-    let parsedDate = new Date(`${dayMonth} ${currentYear}`);
-
-    // Handle year rollover: if parsed date is in the past and we're in Nov/Dec, try next year
-    if (parsedDate.getMonth() < currentMonth && currentMonth >= 10) {
-      parsedDate = new Date(`${dayMonth} ${currentYear + 1}`);
-    }
-
-    return parsedDate;
-  } catch {
-    return new Date(0);
-  }
-}
-
-function isDateOld(dateStr: string): boolean {
+export function isDateOld(dateStr: string): boolean {
   const parsed = parseDateHeader(dateStr);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -39,7 +24,7 @@ function isDateOld(dateStr: string): boolean {
   return parsed < today;
 }
 
-function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
+export function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
   const map = new Map<string, CalendarEvent[]>();
   for (const e of events) {
     if (!isDateOld(e.date)) {
@@ -50,7 +35,7 @@ function groupEventsByDate(events: CalendarEvent[]): Map<string, CalendarEvent[]
   return map;
 }
 
-function getEventDetails(evt: CalendarEvent): string {
+export function getEventDetails(evt: CalendarEvent): string {
   const details: string[] = [];
   if (evt.actual?.trim()) {
     details.push(`A: ${evt.actual.trim()}`);
@@ -64,27 +49,25 @@ function getEventDetails(evt: CalendarEvent): string {
   return details.join(' | ');
 }
 
-function formatEventTime(evt: CalendarEvent): string {
+export function formatEventTime(evt: CalendarEvent): string {
   try {
     const parts = evt.date.split(',');
-    const dayMonth = parts[1]?.trim() || '';
+    const rawDayMonth = parts[1]?.trim() || '';
+    const dayMonth = normalizeMarketWatchMonth(rawDayMonth);
     const currentYear = new Date().getFullYear();
-    const timeET = evt.time;
-
+    const timeET = fixTimeString(evt.time);
     const dateStr = `${dayMonth} ${currentYear} ${timeET}`;
-    const eventDate = parse(dateStr, 'MMM. d yyyy h:mm a', new Date());
-
+    const eventDate = parse(dateStr, 'MMMM d yyyy h:mm a', new Date());
     if (SOURCE_TIMEZONE === DISPLAY_TIMEZONE) {
-      return `**${timeET}**`;
+      return `**${evt.time}**`;
     }
-
-    return `**${formatTimeWithTimezone(timeET, eventDate)}**`;
+    return `**${formatTimeWithTimezone(evt.time, eventDate)}**`;
   } catch {
     return `**${evt.time}**`;
   }
 }
 
-function buildDateBlocks(grouped: Map<string, CalendarEvent[]>): string[] {
+export function buildDateBlocks(grouped: Map<string, CalendarEvent[]>): string[] {
   const sortedDates = Array.from(grouped.keys()).sort(
     (a, b) => parseDateHeader(a).getTime() - parseDateHeader(b).getTime()
   );
@@ -104,7 +87,7 @@ function buildDateBlocks(grouped: Map<string, CalendarEvent[]>): string[] {
   return blocks;
 }
 
-function chunkDateBlocks(blocks: string[]): string[][] {
+export function chunkDateBlocks(blocks: string[]): string[][] {
   const pages: string[][] = [];
   for (let i = 0; i < blocks.length; i += DATES_PER_PAGE) {
     pages.push(blocks.slice(i, i + DATES_PER_PAGE));
@@ -177,9 +160,20 @@ export const calendarCommand = {
         ? await interaction.editReply({ embeds: [embed], components: [row] })
         : await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
 
+      if (globalThis.calendarCache.size >= CALENDAR_CACHE_MAX_SIZE) {
+        let oldestKey: string | null = null;
+        let oldestTime = Infinity;
+        for (const [key, entry] of globalThis.calendarCache) {
+          if (entry.timestamp < oldestTime) {
+            oldestTime = entry.timestamp;
+            oldestKey = key;
+          }
+        }
+        if (oldestKey) globalThis.calendarCache.delete(oldestKey);
+      }
       globalThis.calendarCache.set(message.id, { pages, currentPage, timestamp: Date.now() });
     } catch (error) {
-      console.error('Error in /calendar command:', error);
+      log.error('Error in /calendar command', { error: String(error) });
       if (interaction.deferred || interaction.replied) {
         await interaction.editReply('An error occurred while fetching the calendar events.');
       } else {

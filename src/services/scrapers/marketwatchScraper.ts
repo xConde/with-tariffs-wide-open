@@ -1,8 +1,11 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { CalendarEvent } from '../../models/event';
-import { SCRAPER_URL, SCRAPER_USER_AGENTS, SCRAPER_TIMEOUT_MS } from '../../config/constants';
+import { SCRAPER_URL, SCRAPER_USER_AGENTS, SCRAPER_TIMEOUT_MS, SCRAPER_MAX_RESPONSE_BYTES } from '../../config/constants';
 import { ICalendarScraper } from './ICalendarScraper';
+import { createLogger } from '../../utils/logger';
+
+const log = createLogger('scraper');
 
 function getRandomUserAgent(): string {
   return SCRAPER_USER_AGENTS[Math.floor(Math.random() * SCRAPER_USER_AGENTS.length)];
@@ -35,6 +38,8 @@ export class MarketWatchScraper implements ICalendarScraper {
           'Referer': 'https://www.marketwatch.com/'
         },
         timeout: SCRAPER_TIMEOUT_MS,
+        maxContentLength: SCRAPER_MAX_RESPONSE_BYTES,
+        maxRedirects: 3,
       });
 
       const $ = cheerio.load(html);
@@ -54,13 +59,13 @@ export class MarketWatchScraper implements ICalendarScraper {
         const found = $(selector);
         if (found.length > 0) {
           rows = found;
-          console.log(`[${this.sourceName}] Using selector: "${selector}" (found ${found.length} rows)`);
+          log.info(`Using selector: "${selector}" (found ${found.length} rows)`);
           break;
         }
       }
 
       if (!rows || rows.length === 0) {
-        console.error(`[${this.sourceName}] No table rows found with any selector`);
+        log.error('No table rows found with any selector');
         throw new Error('MarketWatch HTML structure may have changed - no table found');
       }
 
@@ -85,19 +90,19 @@ export class MarketWatchScraper implements ICalendarScraper {
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED') {
-          console.error(`[${this.sourceName}] Scraper timeout after ${SCRAPER_TIMEOUT_MS}ms`);
+          log.error(`Scraper timeout after ${SCRAPER_TIMEOUT_MS}ms`);
           throw new Error(`MarketWatch request timed out after ${SCRAPER_TIMEOUT_MS / 1000}s`);
         }
         if (error.response) {
-          console.error(`[${this.sourceName}] Returned ${error.response.status}: ${error.response.statusText}`);
+          log.error(`Returned ${error.response.status}: ${error.response.statusText}`);
           throw new Error(`MarketWatch HTTP ${error.response.status}`);
         }
         if (error.request) {
-          console.error(`[${this.sourceName}] No response (network issue)`);
+          log.error('No response (network issue)');
           throw new Error('Network error - no response from MarketWatch');
         }
       }
-      console.error(`[${this.sourceName}] Error scraping:`, error);
+      log.error('Error scraping', { error: String(error) });
       throw error;
     }
   }

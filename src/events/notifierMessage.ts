@@ -8,7 +8,7 @@ import {
   EMBED_COLOR_FAILURE,
 } from '../config/constants';
 
-function predictBeat(actual: string, forecast: string): 'beat' | 'miss' | 'neutral' {
+export function predictBeat(actual: string, forecast: string): 'beat' | 'miss' | 'neutral' {
   const a = parseFloat(actual.replace(/[^0-9.-]/g, ''));
   const f = parseFloat(forecast.replace(/[^0-9.-]/g, ''));
   if (isNaN(a) || isNaN(f)) return 'neutral';
@@ -17,7 +17,7 @@ function predictBeat(actual: string, forecast: string): 'beat' | 'miss' | 'neutr
   return 'neutral';
 }
 
-function getBeatMissIndicator(prediction: 'beat' | 'miss' | 'neutral'): string {
+export function getBeatMissIndicator(prediction: 'beat' | 'miss' | 'neutral'): string {
   if (prediction === 'beat') return '↑ Higher';
   if (prediction === 'miss') return '↓ Lower';
   return '– Expected';

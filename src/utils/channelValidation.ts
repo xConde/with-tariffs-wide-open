@@ -1,5 +1,8 @@
 import { discordClient } from '../core/discordClient';
 import { ChannelType, PermissionFlagsBits, TextChannel } from 'discord.js';
+import { createLogger } from './logger';
+
+const log = createLogger('channels');
 
 interface ChannelCheckResult {
   accessible: boolean;
@@ -61,31 +64,31 @@ export async function validateChannelsOnStartup(
   primaryChannelId: string,
   fallbackChannelId?: string
 ): Promise<void> {
-  console.log('Validating Discord channels...');
+  log.info('Validating Discord channels...');
 
   const primary = await validateChannel(primaryChannelId);
 
   if (!primary.accessible) {
-    console.error(`Primary channel (${primaryChannelId}) not accessible:`, primary.errors);
+    log.error(`Primary channel (${primaryChannelId}) not accessible`, { errors: primary.errors.join(', ') });
     throw new Error('Primary notification channel not accessible');
   }
 
   if (!primary.hasPermissions) {
-    console.error(`Primary channel missing permissions:`, primary.errors);
+    log.error('Primary channel missing permissions', { errors: primary.errors.join(', ') });
     throw new Error('Bot lacks permissions in primary channel');
   }
 
-  console.log(`Primary channel validated`);
+  log.info('Primary channel validated');
 
   if (fallbackChannelId) {
     const fallback = await validateChannel(fallbackChannelId);
 
     if (!fallback.accessible) {
-      console.warn(` Fallback channel (${fallbackChannelId}) not accessible:`, fallback.errors);
+      log.warn(`Fallback channel (${fallbackChannelId}) not accessible`, { errors: fallback.errors.join(', ') });
     } else if (!fallback.hasPermissions) {
-      console.warn(` Fallback channel missing permissions:`, fallback.errors);
+      log.warn('Fallback channel missing permissions', { errors: fallback.errors.join(', ') });
     } else {
-      console.log(`Fallback channel validated`);
+      log.info('Fallback channel validated');
     }
   }
 }

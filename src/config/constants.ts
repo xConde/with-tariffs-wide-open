@@ -25,15 +25,22 @@ export const SCRAPER_RETRY_DELAY_MS = 60000; // 1 minute
 // Scraper settings
 export const SCRAPER_URL = 'https://www.marketwatch.com/economy-politics/calendar';
 export const SCRAPER_TIMEOUT_MS = 15000; // 15 seconds - prevents indefinite hangs
+export const SCRAPER_MAX_RESPONSE_BYTES = 5 * 1024 * 1024; // 5MB - prevents OOM from malicious responses
 export const SCRAPER_USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
 ];
 
+// Data validation
+export const SCRAPER_MIN_EVENTS = 5;
+export const SCRAPER_MAX_EVENTS = 500; // Upper bound — MarketWatch typically returns 20-80 events
+
 // Cache cleanup
 export const CALENDAR_CACHE_MAX_AGE_MS = 3600000; // 1 hour
 export const CALENDAR_CACHE_MAX_SIZE = 100;
+export const NOTIFICATION_TIMEOUT_CLEANUP_MS = 7200000; // 2 hours — remove timeouts for events this far in the past
+export const CACHE_CLEANUP_INTERVAL_MS = 3600000; // 1 hour — how often periodic cleanup runs
 
 // Health check
 export const HEARTBEAT_INTERVAL_MS = 60000; // 1 minute

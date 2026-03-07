@@ -1,86 +1,183 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import axios from 'axios';
+import { MarketWatchScraper } from '../src/services/scrapers/marketwatchScraper';
 
-describe('Scraper Selector Fallbacks', () => {
-  describe('Selector Configuration', () => {
-    it('should have multiple selectors defined', () => {
-      const selectors = [
-        'div.element--tableblock table tbody tr',
-        'table.calendar tbody tr',
-        '.economic-calendar table tbody tr',
-        'table tbody tr',
-      ];
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-      expect(selectors.length).toBeGreaterThanOrEqual(3);
-      expect(selectors[0]).toBeTruthy();
+/**
+ * Helper: wraps an inner HTML table structure in a full HTML page.
+ */
+function wrapHtml(body: string): string {
+  return `<html><body>${body}</body></html>`;
+}
+
+/**
+ * A date header row + one event row, reusable across selector tests.
+ */
+const DATE_HEADER = '<tr><td><b>WEDNESDAY, MAR. 5</b></td></tr>';
+const EVENT_ROW = `<tr>
+  <td>8:30 am</td>
+  <td>GDP</td>
+  <td>Q4</td>
+  <td>2.8%</td>
+  <td>2.6%</td>
+  <td>2.5%</td>
+</tr>`;
+const SECOND_EVENT_ROW = `<tr>
+  <td>10:00 am</td>
+  <td>Consumer Confidence</td>
+  <td>Mar.</td>
+  <td></td>
+  <td>98.0</td>
+  <td>98.3</td>
+</tr>`;
+
+describe('MarketWatchScraper - Selector Fallbacks', () => {
+  let scraper: MarketWatchScraper;
+
+  beforeEach(() => {
+    scraper = new MarketWatchScraper();
+    jest.clearAllMocks();
+  });
+
+  it('should parse events using table.calendar selector (fallback 2)', async () => {
+    const html = wrapHtml(`
+      <table class="calendar"><tbody>
+        ${DATE_HEADER}
+        ${EVENT_ROW}
+        ${SECOND_EVENT_ROW}
+      </tbody></table>
+    `);
+    mockedAxios.get.mockResolvedValueOnce({ data: html });
+
+    const events = await scraper.scrape();
+
+    expect(events).toHaveLength(2);
+    expect(events[0]).toEqual({
+      date: 'WEDNESDAY, MAR. 5',
+      time: '8:30 am',
+      title: 'GDP',
+      period: 'Q4',
+      actual: '2.8%',
+      forecast: '2.6%',
+      previous: '2.5%',
     });
+    expect(events[1].title).toBe('Consumer Confidence');
+  });
 
-    it('should have selectors in order of specificity', () => {
-      const selectors = [
-        'div.element--tableblock table tbody tr', // Most specific
-        'table.calendar tbody tr',
-        '.economic-calendar table tbody tr',
-        'table tbody tr',                         // Least specific (fallback)
-      ];
+  it('should parse events using .economic-calendar selector (fallback 3)', async () => {
+    const html = wrapHtml(`
+      <div class="economic-calendar">
+        <table><tbody>
+          ${DATE_HEADER}
+          ${EVENT_ROW}
+        </tbody></table>
+      </div>
+    `);
+    mockedAxios.get.mockResolvedValueOnce({ data: html });
 
-      expect(selectors[0].length).toBeGreaterThan(selectors[3].length);
-    });
+    const events = await scraper.scrape();
 
-    it('should have generic fallback selector', () => {
-      const fallback = 'table tbody tr';
-      expect(fallback).toBe('table tbody tr');
-      expect(fallback.split(' ').length).toBe(3); // Simple selector
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({
+      date: 'WEDNESDAY, MAR. 5',
+      time: '8:30 am',
+      title: 'GDP',
+      period: 'Q4',
+      actual: '2.8%',
+      forecast: '2.6%',
+      previous: '2.5%',
     });
   });
 
-  describe('Selector Matching Logic', () => {
-    it('should use first matching selector', () => {
-      const selectors = ['selector1', 'selector2', 'selector3'];
-      const found = ['selector2']; // Simulate selector2 matches
+  it('should parse events using generic table tbody tr selector (fallback 4)', async () => {
+    // Plain table with no special class or wrapper
+    const html = wrapHtml(`
+      <table><tbody>
+        ${DATE_HEADER}
+        ${EVENT_ROW}
+      </tbody></table>
+    `);
+    mockedAxios.get.mockResolvedValueOnce({ data: html });
 
-      const firstMatch = selectors.find(s => found.includes(s));
-      expect(firstMatch).toBe('selector2');
-    });
+    const events = await scraper.scrape();
 
-    it('should fall through to generic selector if needed', () => {
-      const selectors = [
-        'specific-selector',
-        'table tbody tr', // Generic fallback
-      ];
-
-      const lastResort = selectors[selectors.length - 1];
-      expect(lastResort).toBe('table tbody tr');
-    });
+    expect(events).toHaveLength(1);
+    expect(events[0].title).toBe('GDP');
+    expect(events[0].date).toBe('WEDNESDAY, MAR. 5');
   });
 
-  describe('Error Handling', () => {
-    it('should throw error if no selectors match', () => {
-      const rowsFound = 0;
+  it('should throw when no table exists in the HTML', async () => {
+    const html = wrapHtml(`
+      <div class="content">
+        <p>No economic data available today.</p>
+      </div>
+    `);
+    mockedAxios.get.mockResolvedValueOnce({ data: html });
 
-      if (rowsFound === 0) {
-        const error = new Error('MarketWatch HTML structure may have changed - no table found');
-        expect(error.message).toContain('HTML structure');
-      }
-    });
-
-    it('should log which selector was used', () => {
-      const selector = 'div.element--tableblock table tbody tr';
-      const rowCount = 89;
-
-      const logMessage = `Using selector: "${selector}" (found ${rowCount} rows)`;
-      expect(logMessage).toContain(selector);
-      expect(logMessage).toContain('89');
-    });
+    await expect(scraper.scrape()).rejects.toThrow('MarketWatch HTML structure may have changed');
   });
 
-  describe('Resilience', () => {
-    it('should handle MarketWatch HTML changes gracefully', () => {
-      const selectors = [
-        'old-selector',   // Old structure (may fail)
-        'new-selector',   // New structure (fallback)
-        'table tbody tr', // Generic (ultimate fallback)
-      ];
+  it('should return empty array when table exists but has no event rows', async () => {
+    // Table with only a date header row and a "None scheduled" row
+    const html = wrapHtml(`
+      <table class="calendar"><tbody>
+        ${DATE_HEADER}
+        <tr>
+          <td>8:30 am</td>
+          <td>None scheduled</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody></table>
+    `);
+    mockedAxios.get.mockResolvedValueOnce({ data: html });
 
-      expect(selectors.length).toBeGreaterThanOrEqual(2);
-    });
+    const events = await scraper.scrape();
+
+    expect(events).toHaveLength(0);
+  });
+
+  it('should prefer more specific selector over generic fallback', async () => {
+    // HTML that matches both table.calendar (selector 2) and table tbody tr (selector 4).
+    // The scraper should pick selector 2 first.
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const html = wrapHtml(`
+      <table class="calendar"><tbody>
+        ${DATE_HEADER}
+        ${EVENT_ROW}
+      </tbody></table>
+    `);
+    mockedAxios.get.mockResolvedValueOnce({ data: html });
+
+    await scraper.scrape();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('table.calendar tbody tr')
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it('should track date across multiple rows with fallback selector', async () => {
+    const html = wrapHtml(`
+      <div class="economic-calendar">
+        <table><tbody>
+          <tr><td><b>MONDAY, MAR. 3</b></td></tr>
+          ${EVENT_ROW}
+          <tr><td><b>TUESDAY, MAR. 4</b></td></tr>
+          ${SECOND_EVENT_ROW}
+        </tbody></table>
+      </div>
+    `);
+    mockedAxios.get.mockResolvedValueOnce({ data: html });
+
+    const events = await scraper.scrape();
+
+    expect(events).toHaveLength(2);
+    expect(events[0].date).toBe('MONDAY, MAR. 3');
+    expect(events[1].date).toBe('TUESDAY, MAR. 4');
   });
 });
