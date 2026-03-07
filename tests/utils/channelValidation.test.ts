@@ -1,106 +1,157 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { ChannelType, PermissionFlagsBits } from 'discord.js';
+
+const mockChannelFetch = jest.fn();
+const mockPermissionsHas = jest.fn();
+const mockPermissionsFor = jest.fn();
+
+jest.mock('../../src/core/discordClient', () => ({
+  discordClient: {
+    channels: { fetch: mockChannelFetch },
+    user: { id: 'bot-user-id' },
+  },
+}));
+
+import {
+  validateChannel,
+  validateChannelsOnStartup,
+} from '../../src/utils/channelValidation';
+
+function createMockTextChannel(overrides?: {
+  type?: number;
+  permissionsForReturn?: unknown;
+}) {
+  return {
+    type: overrides?.type ?? ChannelType.GuildText,
+    permissionsFor: overrides?.permissionsForReturn !== undefined
+      ? jest.fn().mockReturnValue(overrides.permissionsForReturn)
+      : mockPermissionsFor,
+  };
+}
 
 describe('Channel Validation', () => {
-  describe('Channel Configuration', () => {
-    it('should validate primary channel ID exists', () => {
-      const channelId = process.env.DISCORD_CHANNEL_ID;
-      if (channelId) {
-        expect(channelId).toBeTruthy();
-        expect(/^\d+$/.test(channelId)).toBe(true);
-      }
-    });
-
-    it('should validate fallback channel ID format if provided', () => {
-      const fallbackId = process.env.FALLBACK_CHANNEL_ID;
-      if (fallbackId) {
-        expect(/^\d+$/.test(fallbackId)).toBe(true);
-      }
-    });
-
-    it('should handle missing fallback gracefully', () => {
-      const fallbackId = process.env.FALLBACK_CHANNEL_ID;
-      expect(fallbackId === undefined || typeof fallbackId === 'string').toBe(true);
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockPermissionsHas.mockReturnValue(true);
+    mockPermissionsFor.mockReturnValue({ has: mockPermissionsHas });
+    mockChannelFetch.mockResolvedValue(createMockTextChannel() as never);
   });
 
-  describe('Validation Result Structure', () => {
-    it('should return accessible and permissions flags', () => {
-      const result = {
-        accessible: true,
-        hasPermissions: true,
-        errors: [],
-      };
+  describe('validateChannel', () => {
+    it('returns accessible and hasPermissions when channel is text with all permissions', async () => {
+      const result = await validateChannel('111');
 
       expect(result.accessible).toBe(true);
       expect(result.hasPermissions).toBe(true);
-      expect(Array.isArray(result.errors)).toBe(true);
+      expect(result.errors).toHaveLength(0);
     });
 
-    it('should include errors when validation fails', () => {
-      const result = {
-        accessible: false,
-        hasPermissions: false,
-        errors: ['Channel not found'],
-      };
+    it('returns not accessible when channel is null', async () => {
+      mockChannelFetch.mockResolvedValue(null as never);
 
-      expect(result.errors.length).toBeGreaterThan(0);
+      const result = await validateChannel('111');
+
+      expect(result.accessible).toBe(false);
+      expect(result.hasPermissions).toBe(false);
+      expect(result.errors).toContain('Channel not found');
+    });
+
+    it('returns not accessible when channel is not a text channel', async () => {
+      mockChannelFetch.mockResolvedValue(
+        createMockTextChannel({ type: ChannelType.DM }) as never
+      );
+
+      const result = await validateChannel('111');
+
+      expect(result.accessible).toBe(false);
+      expect(result.errors).toContain('Channel is not a text channel');
+    });
+
+    it('returns accessible but no permissions when required permissions are missing', async () => {
+      mockPermissionsHas.mockImplementation((perm: unknown) => {
+        return perm !== PermissionFlagsBits.SendMessages;
+      });
+
+      const result = await validateChannel('111');
+
+      expect(result.accessible).toBe(true);
+      expect(result.hasPermissions).toBe(false);
+      expect(result.errors[0]).toContain('Missing permissions');
+    });
+
+    it('returns not accessible when fetch throws an error', async () => {
+      mockChannelFetch.mockRejectedValue(new Error('Unknown Channel') as never);
+
+      const result = await validateChannel('111');
+
+      expect(result.accessible).toBe(false);
+      expect(result.hasPermissions).toBe(false);
+      expect(result.errors[0]).toContain('Unknown Channel');
+    });
+
+    it('returns accessible but no permissions when permissionsFor returns null', async () => {
+      mockChannelFetch.mockResolvedValue(
+        createMockTextChannel({ permissionsForReturn: null }) as never
+      );
+
+      const result = await validateChannel('111');
+
+      expect(result.accessible).toBe(true);
+      expect(result.hasPermissions).toBe(false);
+      expect(result.errors).toContain('Cannot determine permissions');
     });
   });
 
-  describe('Required Permissions', () => {
-    it('should check for SendMessages permission', () => {
-      const requiredPermissions = ['SendMessages', 'EmbedLinks', 'ViewChannel'];
-      expect(requiredPermissions).toContain('SendMessages');
+  describe('validateChannelsOnStartup', () => {
+    it('succeeds when primary channel validates', async () => {
+      await expect(
+        validateChannelsOnStartup('111')
+      ).resolves.toBeUndefined();
     });
 
-    it('should check for EmbedLinks permission', () => {
-      const requiredPermissions = ['SendMessages', 'EmbedLinks', 'ViewChannel'];
-      expect(requiredPermissions).toContain('EmbedLinks');
+    it('throws when primary channel is not accessible', async () => {
+      mockChannelFetch.mockResolvedValue(null as never);
+
+      await expect(
+        validateChannelsOnStartup('111')
+      ).rejects.toThrow('Primary notification channel not accessible');
     });
 
-    it('should check for ViewChannel permission', () => {
-      const requiredPermissions = ['SendMessages', 'EmbedLinks', 'ViewChannel'];
-      expect(requiredPermissions).toContain('ViewChannel');
-    });
-  });
+    it('throws when primary channel lacks permissions', async () => {
+      mockChannelFetch.mockResolvedValue(
+        createMockTextChannel({ permissionsForReturn: null }) as never
+      );
 
-  describe('Fallback Logic', () => {
-    it('should use fallback when primary fails', () => {
-      const primaryFailed = true;
-      const hasFallback = true;
-
-      const shouldUseFallback = primaryFailed && hasFallback;
-      expect(shouldUseFallback).toBe(true);
+      await expect(
+        validateChannelsOnStartup('111')
+      ).rejects.toThrow('Bot lacks permissions in primary channel');
     });
 
-    it('should log when using fallback', () => {
-      const logMessage = 'Using fallback channel for notification';
-      expect(logMessage).toContain('fallback');
-    });
-  });
+    it('warns but does not throw when fallback channel fails', async () => {
+      let callCount = 0;
+      mockChannelFetch.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve(createMockTextChannel());
+        }
+        return Promise.resolve(null);
+      });
 
-  describe('Startup Validation', () => {
-    it('should validate primary channel on startup', () => {
-      const shouldValidate = true;
-      expect(shouldValidate).toBe(true);
-    });
-
-    it('should validate fallback channel if configured', () => {
-      const fallbackId = process.env.FALLBACK_CHANNEL_ID;
-      const shouldValidateFallback = fallbackId !== undefined;
-
-      if (fallbackId) {
-        expect(shouldValidateFallback).toBe(true);
-      }
+      await expect(
+        validateChannelsOnStartup('111', '222')
+      ).resolves.toBeUndefined();
     });
 
-    it('should fail startup if primary channel inaccessible', () => {
-      const primaryAccessible = false;
+    it('succeeds with both primary and fallback valid', async () => {
+      mockChannelFetch.mockImplementation(() => {
+        return Promise.resolve(createMockTextChannel());
+      });
 
-      if (!primaryAccessible) {
-        const shouldThrow = true;
-        expect(shouldThrow).toBe(true);
-      }
+      await expect(
+        validateChannelsOnStartup('111', '222')
+      ).resolves.toBeUndefined();
+
+      expect(mockChannelFetch).toHaveBeenCalledTimes(2);
     });
   });
 });
