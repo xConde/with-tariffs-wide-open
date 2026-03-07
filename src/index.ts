@@ -1,12 +1,15 @@
 import './globalSetup';
 import { waitForInitialSetup, validateEnvironment } from './globalSetup';
-import { initializeDiscordBot } from './discordBot';
+import { initializeDiscordBot, cancelPendingReconnect } from './discordBot';
 import { startScheduler } from './scheduler';
 import { initializeNotifications, persistCurrentNotifications } from './notifier';
 import { schedulePeriodicCleanup } from './utils/cacheCleanup';
 import { setupGracefulShutdown, registerCleanupHandler } from './utils/shutdown';
 import { startHeartbeat, stopHeartbeat } from './utils/healthCheck';
 import { validateChannelsOnStartup } from './utils/channelValidation';
+import { createLogger } from './utils/logger';
+
+const log = createLogger('app');
 
 let cleanupInterval: NodeJS.Timeout;
 let heartbeatInterval: NodeJS.Timeout;
@@ -17,10 +20,11 @@ async function startApp() {
     validateEnvironment();
 
     await waitForInitialSetup();
-    console.log('Initial setup complete');
+    log.info('Initial setup complete');
 
     await initializeDiscordBot();
-    console.log(`Current date: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`);
+    registerCleanupHandler(() => cancelPendingReconnect());
+    log.info('Current date', { date: new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) });
 
     await validateChannelsOnStartup(
       process.env.DISCORD_CHANNEL_ID || '',
@@ -31,7 +35,7 @@ async function startApp() {
 
     await initializeNotifications();
     registerCleanupHandler(() => persistCurrentNotifications());
-    console.log('Notifications scheduled');
+    log.info('Notifications scheduled');
 
     cleanupInterval = schedulePeriodicCleanup();
     registerCleanupHandler(() => {
@@ -39,16 +43,16 @@ async function startApp() {
         clearInterval(cleanupInterval);
       }
     });
-    console.log('Periodic cache cleanup scheduled');
+    log.info('Periodic cache cleanup scheduled');
 
     heartbeatInterval = await startHeartbeat();
     registerCleanupHandler(() => {
       stopHeartbeat();
     });
 
-    console.log('Application started.');
+    log.info('Application started');
   } catch (error) {
-    console.error('Failed to initialize application:', error);
+    log.error('Failed to initialize application', { error: String(error) });
     process.exit(1);
   }
 }
