@@ -13,4 +13,4 @@ structured logging, CI/CD, Docker support.
 - [x] Sprint 6: discordBot tests, GitHub Actions CI, Dockerfile
 - [x] Red-team gate: Fix Dockerfile health check, logger circular ref safety, file ownership
 - [x] Final full-suite verification (202 tests, 17 suites, clean build)
-- [ ] PR creation
+- [x] PR creation (https://github.com/xConde/with-tariffs-wide-open/pull/3)
