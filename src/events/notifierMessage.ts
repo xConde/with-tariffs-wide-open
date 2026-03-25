@@ -8,12 +8,28 @@ import {
   EMBED_COLOR_FAILURE,
 } from '../config/constants';
 
-export function predictBeat(actual: string, forecast: string): 'beat' | 'miss' | 'neutral' {
+const LOWER_IS_BETTER_KEYWORDS = [
+  'unemployment', 'jobless', 'claims', 'cpi', 'inflation', 'pce price',
+  'consumer price', 'producer price', 'import price', 'export price',
+  'deficit', 'debt',
+];
+
+export function isLowerBetter(title: string): boolean {
+  const lower = title.toLowerCase();
+  return LOWER_IS_BETTER_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+export function predictBeat(actual: string, forecast: string, title = ''): 'beat' | 'miss' | 'neutral' {
   const a = parseFloat(actual.replace(/[^0-9.-]/g, ''));
   const f = parseFloat(forecast.replace(/[^0-9.-]/g, ''));
   if (isNaN(a) || isNaN(f)) return 'neutral';
-  if (a > f) return 'beat';
-  if (a < f) return 'miss';
+  if (isLowerBetter(title)) {
+    if (a < f) return 'beat';
+    if (a > f) return 'miss';
+  } else {
+    if (a > f) return 'beat';
+    if (a < f) return 'miss';
+  }
   return 'neutral';
 }
 
@@ -54,7 +70,7 @@ export function buildUpdatedNotificationEmbed(groupEvents: CalendarEvent[]): Emb
   let embedColor: ColorResolvable = EMBED_COLOR_DEFAULT;
   if (groupEvents.length === 1) {
     const evt = groupEvents[0];
-    const prediction = predictBeat(evt.actual || '', evt.forecast || '');
+    const prediction = predictBeat(evt.actual || '', evt.forecast || '', evt.title);
     embedColor = prediction === 'beat' ? EMBED_COLOR_SUCCESS : prediction === 'miss' ? EMBED_COLOR_FAILURE : EMBED_COLOR_DEFAULT;
   }
   const embed = new EmbedBuilder().setColor(embedColor).setTitle('Event Results');
@@ -64,7 +80,7 @@ export function buildUpdatedNotificationEmbed(groupEvents: CalendarEvent[]): Emb
     const bullet = `• **${evt.title}**`;
     const evtLines: string[] = [];
     if (evt.actual && evt.actual.trim() !== '') {
-      const prediction = predictBeat(evt.actual, evt.forecast || '');
+      const prediction = predictBeat(evt.actual, evt.forecast || '', evt.title);
       evtLines.push(`Actual: ${evt.actual.trim()} ${getBeatMissIndicator(prediction)}`);
     }
     if (evt.forecast && evt.forecast.trim() !== '') {

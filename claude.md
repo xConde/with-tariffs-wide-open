@@ -67,8 +67,7 @@ Claude should immediately read these rule files to understand the project:
 ## Important Paths
 
 - Rules: `/.ai/rules/`
-- Complete Guide: `/GUIDE.md` (ONE comprehensive reference)
-- Archived Docs: `/.ai/archive/` (historical references)
+- Complete Guide: `/GUIDE.md` (architecture, testing, historical reference)
 - Source code: `/src/`
 - Scrapers: `/src/services/scrapers/` (extensible scraper modules)
 - Commands: `/src/commands/`
@@ -126,7 +125,7 @@ Optional:
 
 ### Event Lifecycle
 1. Daily scrape at 3 AM (cron job)
-2. Events stored in `calendar-events.json`
+2. Events stored in `data/events.json`
 3. Notifications scheduled (30min & 1min before)
 4. 1-minute alert updates after event with actual values
 5. Old events filtered from display

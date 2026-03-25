@@ -1,5 +1,5 @@
 import { discordClient } from '../core/discordClient';
-import { ChannelType, PermissionFlagsBits, TextChannel } from 'discord.js';
+import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { createLogger } from './logger';
 
 const log = createLogger('channels');
@@ -29,9 +29,7 @@ export async function validateChannel(channelId: string): Promise<ChannelCheckRe
       return { accessible: false, hasPermissions: false, errors };
     }
 
-    const textChannel = channel as TextChannel;
-
-    const permissions = textChannel.permissionsFor(discordClient.user!);
+    const permissions = channel.permissionsFor(discordClient.user!);
     if (!permissions) {
       errors.push('Cannot determine permissions');
       return { accessible: true, hasPermissions: false, errors };
@@ -52,7 +50,9 @@ export async function validateChannel(channelId: string): Promise<ChannelCheckRe
 
     return { accessible: true, hasPermissions: true, errors: [] };
   } catch (error) {
-    errors.push(`Error checking channel: ${error instanceof Error ? error.message : String(error)}`);
+    const message = error instanceof Error ? error.message : String(error);
+    log.error('Failed to validate channel', { channelId, error: message });
+    errors.push(`Error checking channel: ${message}`);
     return { accessible: false, hasPermissions: false, errors };
   }
 }

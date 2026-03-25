@@ -14,8 +14,12 @@ jest.mock('../src/scraper', () => ({
 }));
 
 const mockSaveEvents = jest.fn<(events: CalendarEvent[]) => Promise<void>>();
+const mockUpdateScrapeTimestamp = jest.fn<() => Promise<void>>();
+const mockGetLastScrapeTime = jest.fn<() => Promise<number | null>>();
 jest.mock('../src/storage', () => ({
   saveEvents: mockSaveEvents,
+  updateScrapeTimestamp: mockUpdateScrapeTimestamp,
+  getLastScrapeTime: mockGetLastScrapeTime,
 }));
 
 const mockRefreshNotifications = jest.fn<() => Promise<void>>();
@@ -55,6 +59,8 @@ describe('Scheduler', () => {
     jest.resetModules();
     mockScrape.mockReset();
     mockSaveEvents.mockReset();
+    mockUpdateScrapeTimestamp.mockReset();
+    mockGetLastScrapeTime.mockReset();
     mockRefreshNotifications.mockReset();
     mockSendScraperFailureAlert.mockReset();
     mockShouldAccept.mockReset();
@@ -62,16 +68,32 @@ describe('Scheduler', () => {
 
     // Default: resolve to empty
     mockSaveEvents.mockResolvedValue(undefined);
+    mockUpdateScrapeTimestamp.mockResolvedValue(undefined);
+    mockGetLastScrapeTime.mockResolvedValue(null);
     mockRefreshNotifications.mockResolvedValue(undefined);
     mockSendScraperFailureAlert.mockResolvedValue(undefined);
   });
 
-  // Use isolateModules to get fresh internal state (isUpdating) per test
-  function loadModule(): Promise<{ updateCalendarEvents: () => Promise<void>; startScheduler: () => void }> {
+  // Use isolateModules to get fresh internal state (isUpdating) per test.
+  // Also returns ScraperError from the same isolated module registry so that
+  // instanceof checks inside the scheduler work correctly.
+  function loadModule(): Promise<{
+    updateCalendarEvents: () => Promise<void>;
+    startScheduler: () => void;
+    stopScheduler: () => void;
+    ScraperError: new (message: string, retryable: boolean) => Error & { retryable: boolean };
+  }> {
     return new Promise((resolve) => {
       jest.isolateModules(() => {
-        const mod = require('../src/scheduler') as { updateCalendarEvents: () => Promise<void>; startScheduler: () => void };
-        resolve(mod);
+        const mod = require('../src/scheduler') as {
+          updateCalendarEvents: () => Promise<void>;
+          startScheduler: () => void;
+          stopScheduler: () => void;
+        };
+        const errors = require('../src/errors') as {
+          ScraperError: new (message: string, retryable: boolean) => Error & { retryable: boolean };
+        };
+        resolve({ ...mod, ScraperError: errors.ScraperError });
       });
     });
   }
@@ -111,8 +133,8 @@ describe('Scheduler', () => {
       const mod = await loadModule();
       await mod.updateCalendarEvents();
 
-      // Should have retried SCRAPER_MAX_RETRIES times (3)
-      expect(mockScrape).toHaveBeenCalledTimes(3);
+      // Non-retryable ScraperError — should abort after first attempt
+      expect(mockScrape).toHaveBeenCalledTimes(1);
       expect(mockSaveEvents).not.toHaveBeenCalled();
       expect(mockRefreshNotifications).not.toHaveBeenCalled();
       expect(mockSendScraperFailureAlert).toHaveBeenCalledTimes(1);
@@ -175,6 +197,27 @@ describe('Scheduler', () => {
       expect(mockScrape).toHaveBeenCalledTimes(1);
       expect(mockSaveEvents).toHaveBeenCalledTimes(1);
     });
+
+    it('aborts retry loop immediately on non-retryable ScraperError', async () => {
+      const mod = await loadModule();
+      mockScrape.mockRejectedValue(new mod.ScraperError('HTML structure changed', false));
+
+      await mod.updateCalendarEvents();
+
+      expect(mockScrape).toHaveBeenCalledTimes(1);
+      expect(mockSaveEvents).not.toHaveBeenCalled();
+      expect(mockSendScraperFailureAlert).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries up to max on retryable ScraperError', async () => {
+      const mod = await loadModule();
+      mockScrape.mockRejectedValue(new mod.ScraperError('network timeout', true));
+
+      await mod.updateCalendarEvents();
+
+      expect(mockScrape).toHaveBeenCalledTimes(3);
+      expect(mockSendScraperFailureAlert).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('startScheduler()', () => {
@@ -187,6 +230,25 @@ describe('Scheduler', () => {
         '0 3 * * *',
         expect.any(Function)
       );
+    });
+  });
+
+  describe('stopScheduler()', () => {
+    it('calls .stop() on the cron task and clears the reference', async () => {
+      const mockStop = jest.fn();
+      mockCronSchedule.mockReturnValue({ stop: mockStop });
+
+      const mod = await loadModule();
+      mod.startScheduler();
+      mod.stopScheduler();
+
+      expect(mockStop).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a no-op when called before startScheduler', async () => {
+      const mod = await loadModule();
+      // Should not throw
+      expect(() => mod.stopScheduler()).not.toThrow();
     });
   });
 });

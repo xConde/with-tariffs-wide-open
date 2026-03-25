@@ -1,7 +1,7 @@
 import './globalSetup';
 import { waitForInitialSetup, validateEnvironment } from './globalSetup';
 import { initializeDiscordBot, cancelPendingReconnect } from './discordBot';
-import { startScheduler } from './scheduler';
+import { startScheduler, stopScheduler } from './scheduler';
 import { initializeNotifications, persistCurrentNotifications } from './notifier';
 import { schedulePeriodicCleanup } from './utils/cacheCleanup';
 import { setupGracefulShutdown, registerCleanupHandler } from './utils/shutdown';
@@ -32,6 +32,7 @@ async function startApp() {
     );
 
     startScheduler();
+    registerCleanupHandler(() => stopScheduler());
 
     await initializeNotifications();
     registerCleanupHandler(() => persistCurrentNotifications());
