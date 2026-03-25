@@ -2,18 +2,16 @@
 import 'dotenv/config';
 import { generateNotificationTriggerEvents, saveTestData } from '../utils/testDataGenerator';
 import { addMinutes } from 'date-fns';
-import { getTimezoneOffset } from 'date-fns-tz';
+import { fromZonedTime } from 'date-fns-tz';
 
 async function main() {
   console.log('Notification Trigger Test Setup\n');
 
   const events = generateNotificationTriggerEvents();
 
-  // Calculate FAKE_DATE to use
+  // Calculate FAKE_DATE to use: treat current local time as EST, convert to UTC
   const now = new Date();
-  const fakeDateLocal = now; // Use current time
-  const offsetMs = getTimezoneOffset('America/New_York', fakeDateLocal);
-  const fakeDateUTC = new Date(fakeDateLocal.getTime() - offsetMs);
+  const fakeDateUTC = fromZonedTime(now, 'America/New_York');
 
   console.log('Step-by-step instructions:\n');
   console.log('1. This script generates events 31 minutes from now');

@@ -16,6 +16,10 @@ export const POST_EVENT_UPDATE_DELAY_MS = 90000; // 90 seconds
 export const SOURCE_TIMEZONE = 'America/New_York'; // MarketWatch data is in ET
 export const DISPLAY_TIMEZONE = process.env.DISPLAY_TIMEZONE || 'America/Chicago'; // User display preference
 
+// Stale data thresholds
+export const STALE_DATA_WARNING_MS = 24 * 60 * 60 * 1000; // 24 hours
+export const STALE_DATA_CRITICAL_MS = 48 * 60 * 60 * 1000; // 48 hours
+
 // Scheduler settings
 export const DAILY_SCRAPE_SCHEDULE = '0 3 * * *'; // 3 AM daily
 export const DAILY_SCRAPE_TIMEZONE = 'America/New_York';
@@ -37,18 +41,14 @@ export const SCRAPER_MIN_EVENTS = 5;
 export const SCRAPER_MAX_EVENTS = 500; // Upper bound — MarketWatch typically returns 20-80 events
 
 // Cache cleanup
-export const CALENDAR_CACHE_MAX_AGE_MS = 3600000; // 1 hour
+export const CALENDAR_CACHE_MAX_AGE_MS = 15 * 60 * 1000; // 15 minutes
 export const CALENDAR_CACHE_MAX_SIZE = 100;
 export const NOTIFICATION_TIMEOUT_CLEANUP_MS = 7200000; // 2 hours — remove timeouts for events this far in the past
-export const CACHE_CLEANUP_INTERVAL_MS = 3600000; // 1 hour — how often periodic cleanup runs
+export const CACHE_CLEANUP_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes — how often periodic cleanup runs
 
 // Health check
 export const HEARTBEAT_INTERVAL_MS = 60000; // 1 minute
 export const HEARTBEAT_MAX_AGE_MS = 120000; // 2 minutes
-
-// Discord reconnect
-export const MAX_RECONNECT_ATTEMPTS = 5;
-export const RECONNECT_BASE_DELAY_MS = 5000; // 5 seconds, multiplied by attempt number
 
 // Discord embed colors
 export const EMBED_COLOR_DEFAULT = 0x7289da;

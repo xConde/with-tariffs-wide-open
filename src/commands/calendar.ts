@@ -5,7 +5,7 @@ import { CalendarEvent } from '../models/event';
 import { DATES_PER_PAGE, EMBED_COLOR_DEFAULT, SOURCE_TIMEZONE, DISPLAY_TIMEZONE, CALENDAR_CACHE_MAX_SIZE } from '../config/constants';
 import { formatTimeWithTimezone } from '../utils/timezoneDisplay';
 import { parse } from 'date-fns';
-import { parseDateHeader, normalizeMarketWatchMonth, fixTimeString } from '../utils/dateParser';
+import { parseDateHeader, normalizeMarketWatchMonth, fixTimeString, resolveEventYear } from '../utils/dateParser';
 import { createLogger } from '../utils/logger';
 export { parseDateHeader };
 
@@ -54,9 +54,9 @@ export function formatEventTime(evt: CalendarEvent): string {
     const parts = evt.date.split(',');
     const rawDayMonth = parts[1]?.trim() || '';
     const dayMonth = normalizeMarketWatchMonth(rawDayMonth);
-    const currentYear = new Date().getFullYear();
+    const year = resolveEventYear(dayMonth);
     const timeET = fixTimeString(evt.time);
-    const dateStr = `${dayMonth} ${currentYear} ${timeET}`;
+    const dateStr = `${dayMonth} ${year} ${timeET}`;
     const eventDate = parse(dateStr, 'MMMM d yyyy h:mm a', new Date());
     if (SOURCE_TIMEZONE === DISPLAY_TIMEZONE) {
       return `**${evt.time}**`;

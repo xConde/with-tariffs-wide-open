@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import {
   parseDateHeader,
   isDateOld,
@@ -8,11 +8,43 @@ import {
   buildCalendarEmbed,
   formatEventTime,
   buildDateBlocks,
+  calendarCommand,
 } from '../../src/commands/calendar';
 import { CalendarEvent } from '../../src/models/event';
-import { DATES_PER_PAGE } from '../../src/config/constants';
+import { DATES_PER_PAGE, CALENDAR_CACHE_MAX_SIZE } from '../../src/config/constants';
+import * as storageModule from '../../src/storage';
+import * as scraperModule from '../../src/scraper';
+
+// --- Mocks for execute() tests ---
+// Factories must NOT reference outer variables (jest.mock is hoisted before const declarations).
+jest.mock('../../src/storage', () => ({
+  getStoredEvents: jest.fn(),
+  saveEvents: jest.fn(),
+}));
+
+jest.mock('../../src/scraper', () => ({
+  scrapeEconomicCalendar: jest.fn(),
+}));
+
+// Typed references obtained after hoisting via jest.mocked()
+const mockGetStoredEvents = jest.mocked(storageModule.getStoredEvents);
+const mockSaveEvents = jest.mocked(storageModule.saveEvents);
+const mockScrapeEconomicCalendar = jest.mocked(scraperModule.scrapeEconomicCalendar);
+
+// Pin the system clock to June 15, 2025 for all date-dependent tests.
+// This eliminates conditional skips and makes the suite deterministic on any calendar date.
+const PINNED_DATE = new Date('2025-06-15T12:00:00.000Z');
 
 describe('Calendar Command Functions', () => {
+  beforeEach(() => {
+    jest.useFakeTimers({ doNotFake: ['setTimeout', 'setInterval'] });
+    jest.setSystemTime(PINNED_DATE);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe('parseDateHeader', () => {
     it('should parse a valid date header to a Date object', () => {
       const result = parseDateHeader('Monday, March 17');
@@ -22,9 +54,9 @@ describe('Calendar Command Functions', () => {
     });
 
     it('should use the current year for parsed dates', () => {
+      // Clock is pinned to 2025-06-15; June 20 is after current date so resolves to 2025
       const result = parseDateHeader('Friday, June 20');
-      const currentYear = new Date().getFullYear();
-      expect(result.getFullYear()).toBeGreaterThanOrEqual(currentYear);
+      expect(result.getFullYear()).toBe(2025);
     });
 
     it('should return epoch date for malformed input', () => {
@@ -58,41 +90,26 @@ describe('Calendar Command Functions', () => {
 
   describe('isDateOld', () => {
     it('should return false for a far-future date', () => {
-      // Use a date guaranteed to be in the future
-      const futureYear = new Date().getFullYear() + 2;
-      // parseDateHeader uses current year, so we need a month/day that's always ahead.
-      // Instead, use a header that resolves to a future date.
+      // Clock pinned to 2025-06-15; December 31 is always ahead
       expect(isDateOld('Monday, December 31')).toBe(false);
     });
 
-    it('should return true for a date far in the past within this year', () => {
-      // January 1 of the current year is very likely in the past
-      // (unless it's literally Jan 1)
-      const today = new Date();
-      if (today.getMonth() > 0 || today.getDate() > 1) {
-        expect(isDateOld('Wednesday, January 1')).toBe(true);
-      }
+    it('should return true for a date in the past within this year', () => {
+      // Clock pinned to 2025-06-15; January 1 is definitely in the past
+      expect(isDateOld('Wednesday, January 1')).toBe(true);
     });
 
     it('should return false for today', () => {
-      const today = new Date();
-      const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
-      ];
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const header = `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}`;
-      expect(isDateOld(header)).toBe(false);
+      // Clock pinned to Sunday, June 15 2025
+      expect(isDateOld('Sunday, June 15')).toBe(false);
     });
   });
 
   describe('groupEventsByDate', () => {
     function makeFutureEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
-      // Use December 31 which will always be in the future (unless it's Dec 31)
-      const today = new Date();
-      const futureMonth = today.getMonth() === 11 && today.getDate() === 31 ? 'December 30' : 'December 31';
+      // Clock pinned to 2025-06-15; December 31 is always ahead
       return {
-        date: `Tuesday, ${futureMonth}`,
+        date: 'Wednesday, December 31',
         time: '8:30 am',
         title: 'Test Event',
         period: 'Q4',
@@ -121,29 +138,24 @@ describe('Calendar Command Functions', () => {
     });
 
     it('should filter out events with old dates', () => {
-      const today = new Date();
-      // Only run this assertion if we're past Jan 1
-      if (today.getMonth() > 0 || today.getDate() > 1) {
-        const events: CalendarEvent[] = [
-          { date: 'Wednesday, January 1', time: '8:30 am', title: 'Old Event', period: 'Q1' },
-          makeFutureEvent({ title: 'Future Event' }),
-        ];
-        const grouped = groupEventsByDate(events);
-        expect(grouped.size).toBe(1);
-        const values = Array.from(grouped.values())[0];
-        expect(values[0].title).toBe('Future Event');
-      }
+      // Clock pinned to 2025-06-15; January 1 is in the past, December 31 is future
+      const events: CalendarEvent[] = [
+        { date: 'Wednesday, January 1', time: '8:30 am', title: 'Old Event', period: 'Q1' },
+        makeFutureEvent({ title: 'Future Event' }),
+      ];
+      const grouped = groupEventsByDate(events);
+      expect(grouped.size).toBe(1);
+      const values = Array.from(grouped.values())[0];
+      expect(values[0].title).toBe('Future Event');
     });
 
     it('should return an empty map when all events are old', () => {
-      const today = new Date();
-      if (today.getMonth() > 0 || today.getDate() > 1) {
-        const events: CalendarEvent[] = [
-          { date: 'Wednesday, January 1', time: '8:30 am', title: 'Old', period: 'Q1' },
-        ];
-        const grouped = groupEventsByDate(events);
-        expect(grouped.size).toBe(0);
-      }
+      // Clock pinned to 2025-06-15; January 1 is in the past
+      const events: CalendarEvent[] = [
+        { date: 'Wednesday, January 1', time: '8:30 am', title: 'Old', period: 'Q1' },
+      ];
+      const grouped = groupEventsByDate(events);
+      expect(grouped.size).toBe(0);
     });
 
     it('should return an empty map for an empty array', () => {
@@ -399,5 +411,139 @@ describe('Calendar Command Functions', () => {
       const blocks = buildDateBlocks(grouped);
       expect(blocks).toEqual([]);
     });
+  });
+});
+
+// Clock is pinned to June 15 2025 — use June 16+ for future events.
+const FUTURE_EVENT: CalendarEvent = {
+  date: 'Monday, JUNE 16',
+  time: '10:00am',
+  title: 'Test GDP',
+  period: 'Q1',
+  actual: '',
+  forecast: '2.5%',
+  previous: '2.3%',
+};
+
+function makeMockInteraction() {
+  const mockMessage = { id: 'msg-123' };
+  const mock = {
+    deferReply: jest.fn<(opts?: unknown) => Promise<void>>().mockImplementation(async () => {
+      mock.deferred = true;
+    }),
+    editReply: jest.fn<(arg: unknown) => Promise<{ id: string }>>().mockResolvedValue(mockMessage),
+    reply: jest.fn<(arg: unknown) => Promise<{ id: string }>>().mockResolvedValue(mockMessage),
+    deferred: false,
+    replied: false,
+    commandName: 'calendar',
+  };
+  return mock;
+}
+
+describe('calendarCommand.execute()', () => {
+  const PINNED_EXECUTE_DATE = new Date('2025-06-15T12:00:00.000Z');
+
+  beforeEach(() => {
+    jest.useFakeTimers({ doNotFake: ['setTimeout', 'setInterval'] });
+    jest.setSystemTime(PINNED_EXECUTE_DATE);
+    globalThis.calendarCache = new Map();
+    mockGetStoredEvents.mockReset();
+    mockSaveEvents.mockReset();
+    mockScrapeEconomicCalendar.mockReset();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('stored events exist → immediate reply (no deferReply)', async () => {
+    mockGetStoredEvents.mockResolvedValue([FUTURE_EVENT]);
+    const interaction = makeMockInteraction();
+
+    await calendarCommand.execute(interaction as never);
+
+    expect(interaction.deferReply).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledTimes(1);
+    const replyArg = (interaction.reply.mock.calls[0] as unknown[])[0] as { embeds: unknown[] };
+    expect(replyArg).toHaveProperty('embeds');
+    expect((replyArg.embeds as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  it('no stored events → deferReply then editReply with embed after scrape', async () => {
+    mockGetStoredEvents.mockResolvedValue([]);
+    mockScrapeEconomicCalendar.mockResolvedValue([FUTURE_EVENT]);
+    const interaction = makeMockInteraction();
+
+    await calendarCommand.execute(interaction as never);
+
+    expect(interaction.deferReply).toHaveBeenCalledTimes(1);
+    expect(interaction.editReply).toHaveBeenCalledTimes(1);
+    const editArg = (interaction.editReply.mock.calls[0] as unknown[])[0] as { embeds: unknown[] };
+    expect(editArg).toHaveProperty('embeds');
+    expect((editArg.embeds as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  it('no events at all → replies with "No calendar events found."', async () => {
+    mockGetStoredEvents.mockResolvedValue([]);
+    mockScrapeEconomicCalendar.mockResolvedValue([]);
+    const interaction = makeMockInteraction();
+
+    await calendarCommand.execute(interaction as never);
+
+    // deferReply called because stored events was empty
+    expect(interaction.deferReply).toHaveBeenCalledTimes(1);
+    expect(interaction.editReply).toHaveBeenCalledWith('No calendar events found.');
+  });
+
+  it('events exist but all are old → replies with "No upcoming events found."', async () => {
+    const oldEvent: CalendarEvent = {
+      date: 'Wednesday, January 1',
+      time: '8:30am',
+      title: 'Old CPI',
+      period: 'Q4',
+    };
+    mockGetStoredEvents.mockResolvedValue([oldEvent]);
+    const interaction = makeMockInteraction();
+
+    await calendarCommand.execute(interaction as never);
+
+    // Stored events were non-empty so no defer
+    expect(interaction.deferReply).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith('No upcoming events found.');
+  });
+
+  it('cache entry is created after reply with message id as key', async () => {
+    mockGetStoredEvents.mockResolvedValue([FUTURE_EVENT]);
+    const interaction = makeMockInteraction();
+
+    await calendarCommand.execute(interaction as never);
+
+    expect(globalThis.calendarCache.has('msg-123')).toBe(true);
+    const entry = globalThis.calendarCache.get('msg-123');
+    expect(entry).toHaveProperty('pages');
+    expect(entry).toHaveProperty('currentPage', 0);
+    expect(entry).toHaveProperty('timestamp');
+  });
+
+  it('LRU eviction at CALENDAR_CACHE_MAX_SIZE: oldest entry removed when cache is full', async () => {
+    // Pre-fill cache to the limit; oldest entry has the lowest timestamp
+    const oldestKey = 'oldest-msg';
+    globalThis.calendarCache.set(oldestKey, { pages: [], currentPage: 0, timestamp: 1 });
+    for (let i = 1; i < CALENDAR_CACHE_MAX_SIZE; i++) {
+      globalThis.calendarCache.set(`msg-fill-${i}`, { pages: [], currentPage: 0, timestamp: i + 1000 });
+    }
+    expect(globalThis.calendarCache.size).toBe(CALENDAR_CACHE_MAX_SIZE);
+
+    mockGetStoredEvents.mockResolvedValue([FUTURE_EVENT]);
+    const interaction = makeMockInteraction();
+
+    await calendarCommand.execute(interaction as never);
+
+    // Oldest entry should have been evicted
+    expect(globalThis.calendarCache.has(oldestKey)).toBe(false);
+    // New entry should be present
+    expect(globalThis.calendarCache.has('msg-123')).toBe(true);
+    // Size should stay at CALENDAR_CACHE_MAX_SIZE
+    expect(globalThis.calendarCache.size).toBe(CALENDAR_CACHE_MAX_SIZE);
   });
 });

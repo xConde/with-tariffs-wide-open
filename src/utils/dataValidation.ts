@@ -19,8 +19,8 @@ export function validateEvent(event: CalendarEvent): ValidationResult {
     errors.push('Missing or empty date field');
   }
 
-  if (!event.time || event.time.trim() === '') {
-    errors.push('Missing or empty time field');
+  if (event.time === undefined || event.time === null) {
+    errors.push('Missing time field');
   }
 
   if (!event.title || event.title.trim() === '') {

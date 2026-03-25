@@ -61,13 +61,16 @@ MarketWatch → Scraper (15s timeout, 4 selectors)
 src/
 ├── core/              # Shared (discordClient)
 ├── config/            # Constants (45+ values)
+├── events/            # Event message builders (notifierMessage)
+├── models/            # Shared TypeScript interfaces
 ├── services/          # Scrapers (extensible)
 │   └── scrapers/
 │       ├── ICalendarScraper.ts
 │       └── marketwatchScraper.ts
 ├── commands/          # Slash commands
-├── utils/             # 9 utility modules
-└── Main modules (scraper, storage, scheduler, notifier)
+├── utils/             # 11 utility modules
+├── errors.ts          # Typed error classes (ScraperError, StorageError, ValidationError)
+└── Main modules (scraper, storage, scheduler, notifier, discordBot)
 ```
 
 ---
@@ -76,7 +79,7 @@ src/
 
 ### Quick Test
 ```bash
-npm test                    # 202 tests, ~7s
+npm test                    # 339 tests, ~4s
 npm run test:watch          # Watch mode
 ```
 
@@ -251,6 +254,16 @@ npm run test:view-data      # Verify events exist
 | **Selector fallbacks** (4) | Adapt to HTML changes |
 | **Fallback channel** | Graceful degradation |
 
+### Hardening Features
+
+| Feature | Where | Detail |
+|---------|-------|--------|
+| **Typed error classes** | `src/errors.ts` | `ScraperError` (retryable flag), `StorageError`, `ValidationError` — replaces raw `Error` throws |
+| **Backup rotation** | `src/storage.ts` | On each save, rotates up to 3 backup files; load path auto-recovers from backups |
+| **Rate limit handling** | `marketwatchScraper.ts` | Detects HTTP 429, extracts `Retry-After`, sets `rateLimitedUntil` to skip early retries |
+| **CI coverage upload** | `.github/workflows/ci.yml` | Coverage artifacts retained 14 days per run on Node 18 and 20 |
+| **Docker multi-stage** | `Dockerfile` | Non-root user, health check via `heartbeat.txt` staleness, JSON logging in production |
+
 ### Failure Recovery
 
 **MarketWatch down:**
@@ -280,7 +293,8 @@ npm run start              # Deploy commands + start bot
 
 ### Testing
 ```bash
-npm test                   # All 202 tests
+npm test                   # All 339 tests
+npm run test:coverage      # Tests with coverage report
 npm run test:live-scrape   # Scraper validation
 npm run test:trigger-cron  # Cron test (60s)
 npm run test:trigger-notif # Notification test (1min)
@@ -324,7 +338,7 @@ npm run test:view-data             # View stored events
 ## Performance
 
 - Scraper: ~250ms (< 15s max)
-- Tests: ~7s (202 tests)
+- Tests: ~4s (339 tests, 20 suites)
 - Build: ~2s
 - Memory: ~150MB (with cleanup)
 

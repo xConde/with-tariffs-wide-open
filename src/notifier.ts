@@ -14,7 +14,7 @@ import {
   POST_EVENT_UPDATE_DELAY_MS,
 } from './config/constants';
 import { getEventsNeedingNotifications, saveNotificationState } from './utils/notificationPersistence';
-import { normalizeMarketWatchMonth, fixTimeString } from './utils/dateParser';
+import { normalizeMarketWatchMonth, fixTimeString, resolveEventYear } from './utils/dateParser';
 import { createLogger } from './utils/logger';
 
 const log = createLogger('notifier');
@@ -40,7 +40,7 @@ function parseEventDateTime(event: CalendarEvent): Date | null {
   if (!rawDayMonth) return null;
 
   const dayMonth = normalizeMarketWatchMonth(rawDayMonth);
-  const year = new Date().getFullYear();
+  const year = resolveEventYear(dayMonth);
   const fixedTime = fixTimeString(event.time);
   const baseStr = `${dayMonth} ${year} ${fixedTime}`;
   const baseDate = parse(baseStr, 'MMMM d yyyy h:mm a', new Date());
@@ -126,7 +126,18 @@ export async function scheduleNotifications(): Promise<void> {
             if (windowMinutes === NOTIFICATION_FINAL_WARNING_MINUTES) {
               const embed = buildNotificationEmbed(windowMinutes, groupEvents);
               const msg = await sendEmbed(embed);
+              // Capture the current array reference so we can detect stale post-event
+              // timeouts: if scheduleNotifications() is called again before the delay
+              // fires, clearScheduledNotifications() replaces the array, making this
+              // reference stale and preventing the orphaned update from running.
+              const currentTimeouts = globalThis.notificationTimeouts.get(groupKey);
               const postEventTimeout = setTimeout(async () => {
+                // If the group was cleared or rescheduled, the map entry will be
+                // absent or point to a different array — skip the stale update.
+                if (globalThis.notificationTimeouts.get(groupKey) !== currentTimeouts) {
+                  log.info('Post-event update skipped: notification group was rescheduled', { groupKey });
+                  return;
+                }
                 try {
                   await updateCalendarAlert(msg, groupEvents);
                 } catch (error) {
@@ -154,7 +165,7 @@ export async function scheduleNotifications(): Promise<void> {
 
   // Persist scheduled state so notifications survive restarts.
   // saveNotificationState overwrites any previous state, so no explicit clear is needed.
-  await saveNotificationState(groups, globalThis.notificationTimeouts);
+  await saveNotificationState(groups);
 }
 
 async function updateCalendarAlert(msg: Message | null, originalGroup: CalendarEvent[]): Promise<void> {
@@ -196,7 +207,7 @@ export async function persistCurrentNotifications(): Promise<void> {
   if (events.length === 0) return;
 
   const groups = groupEvents(events);
-  await saveNotificationState(groups, globalThis.notificationTimeouts);
+  await saveNotificationState(groups);
 }
 
 /**

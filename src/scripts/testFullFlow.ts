@@ -3,7 +3,7 @@ import 'dotenv/config';
 import { scrapeEconomicCalendar } from '../scraper';
 import { saveEvents, getStoredEvents } from '../storage';
 import { addMinutes } from 'date-fns';
-import { getTimezoneOffset } from 'date-fns-tz';
+import { parseDateHeader } from '../utils/dateParser';
 
 async function main() {
   console.log('Full Flow End-to-End Test\n');
@@ -90,12 +90,8 @@ async function main() {
     const upcomingWithTimes = retrieved
       .filter(e => {
         try {
-          const parts = e.date.split(',');
-          const dayMonth = parts[1]?.trim() || '';
-          const year = new Date().getFullYear();
-          const dateStr = `${dayMonth} ${year} ${e.time}`;
-          const eventDate = new Date(dateStr);
-          return eventDate > now;
+          const eventDate = parseDateHeader(e.date);
+          return eventDate > now && eventDate.getTime() !== 0;
         } catch {
           return false;
         }
@@ -105,11 +101,7 @@ async function main() {
     if (upcomingWithTimes.length > 0) {
       console.log('Next 5 notification schedules:');
       upcomingWithTimes.forEach((evt, i) => {
-        const parts = evt.date.split(',');
-        const dayMonth = parts[1]?.trim() || '';
-        const year = new Date().getFullYear();
-        const dateStr = `${dayMonth} ${year} ${evt.time}`;
-        const eventDate = new Date(dateStr);
+        const eventDate = parseDateHeader(evt.date);
 
         const notif30 = addMinutes(eventDate, -30);
         const notif1 = addMinutes(eventDate, -1);

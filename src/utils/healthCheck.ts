@@ -70,7 +70,11 @@ export async function checkHealth(): Promise<{ healthy: boolean; lastHeartbeat?:
       lastHeartbeat: heartbeat.timestamp,
       uptimeSeconds: heartbeat.uptime,
     };
-  } catch {
+  } catch (error) {
+    const code = error instanceof Error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined;
+    if (code !== 'ENOENT') {
+      log.error('Failed to read heartbeat file', { error: String(error), code });
+    }
     return { healthy: false };
   }
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   predictBeat,
+  isLowerBetter,
   getBeatMissIndicator,
   buildNotificationEmbed,
   buildUpdatedNotificationEmbed,
@@ -48,6 +49,60 @@ describe('Notification Message Functions', () => {
     it('should strip non-numeric characters before comparing', () => {
       expect(predictBeat('$5.2', '$5.0')).toBe('beat');
       expect(predictBeat('3.0K', '4.0K')).toBe('miss');
+    });
+
+    it('GDP higher than forecast → beat (higher is better)', () => {
+      expect(predictBeat('3.5%', '3.0%', 'GDP')).toBe('beat');
+    });
+
+    it('CPI higher than forecast → miss (lower is better)', () => {
+      expect(predictBeat('3.5%', '3.0%', 'CPI')).toBe('miss');
+    });
+
+    it('Unemployment lower than forecast → beat (lower is better)', () => {
+      expect(predictBeat('3.8%', '4.0%', 'Unemployment Rate')).toBe('beat');
+    });
+
+    it('Jobless claims lower than forecast → beat (lower is better)', () => {
+      expect(predictBeat('210K', '220K', 'Initial Jobless Claims')).toBe('beat');
+    });
+
+    it('Unknown indicator higher than forecast → beat (default higher is better)', () => {
+      expect(predictBeat('105', '100', 'Consumer Confidence')).toBe('beat');
+    });
+  });
+
+  describe('isLowerBetter', () => {
+    it('should return true for unemployment indicators', () => {
+      expect(isLowerBetter('Unemployment Rate')).toBe(true);
+      expect(isLowerBetter('Initial Jobless Claims')).toBe(true);
+    });
+
+    it('should return true for inflation indicators', () => {
+      expect(isLowerBetter('CPI')).toBe(true);
+      expect(isLowerBetter('Core Inflation Rate')).toBe(true);
+      expect(isLowerBetter('PCE Price Index')).toBe(true);
+      expect(isLowerBetter('Consumer Price Index')).toBe(true);
+      expect(isLowerBetter('Producer Price Index')).toBe(true);
+    });
+
+    it('should return true for trade/debt indicators', () => {
+      expect(isLowerBetter('Trade Deficit')).toBe(true);
+      expect(isLowerBetter('National Debt')).toBe(true);
+      expect(isLowerBetter('Import Price Index')).toBe(true);
+      expect(isLowerBetter('Export Price Index')).toBe(true);
+    });
+
+    it('should return false for growth indicators', () => {
+      expect(isLowerBetter('GDP')).toBe(false);
+      expect(isLowerBetter('Nonfarm Payrolls')).toBe(false);
+      expect(isLowerBetter('Retail Sales')).toBe(false);
+      expect(isLowerBetter('Consumer Confidence')).toBe(false);
+    });
+
+    it('should be case-insensitive', () => {
+      expect(isLowerBetter('UNEMPLOYMENT RATE')).toBe(true);
+      expect(isLowerBetter('cpi')).toBe(true);
     });
   });
 

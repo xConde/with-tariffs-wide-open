@@ -29,7 +29,7 @@ export async function sendAdminAlert(message: string, details?: string): Promise
       .setTimestamp();
 
     if (details) {
-      embed.addFields({ name: 'Details', value: details });
+      embed.addFields({ name: 'Details', value: details.slice(0, 1024) });
     }
 
     await user.send({ embeds: [embed] });
@@ -46,9 +46,10 @@ export async function sendAdminAlert(message: string, details?: string): Promise
  */
 export async function sendScraperFailureAlert(
   attempts: number,
-  lastError: Error
+  lastError: Error,
+  staleDataContext?: string
 ): Promise<void> {
-  const message = `Scraper failed after ${attempts} attempts`;
+  const message = staleDataContext ?? `Scraper failed after ${attempts} attempts`;
   const details = `Last error: ${lastError.message}\n\nBot is serving stale data. Please investigate.`;
 
   await sendAdminAlert(message, details);

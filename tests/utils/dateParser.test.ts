@@ -1,9 +1,10 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import {
   normalizeMarketWatchMonth,
   MONTH_NORMALIZATION,
   fixTimeString,
   parseDateHeader,
+  resolveEventYear,
 } from '../../src/utils/dateParser';
 
 describe('dateParser', () => {
@@ -59,6 +60,51 @@ describe('dateParser', () => {
       expect(fixTimeString('TBA')).toBe('TBA');
       expect(fixTimeString('')).toBe('');
       expect(fixTimeString('8:30')).toBe('8:30');
+    });
+  });
+
+  describe('resolveEventYear()', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('normal case: June date when current month is June → current year', () => {
+      jest.setSystemTime(new Date('2025-06-15T12:00:00Z'));
+      expect(resolveEventYear('June 20')).toBe(2025);
+    });
+
+    it('rollover: January date when current month is November → next year', () => {
+      jest.setSystemTime(new Date('2025-11-20T12:00:00Z'));
+      expect(resolveEventYear('January 6')).toBe(2026);
+    });
+
+    it('rollover: February date when current month is December → next year', () => {
+      jest.setSystemTime(new Date('2025-12-31T12:00:00Z'));
+      expect(resolveEventYear('February 3')).toBe(2026);
+    });
+
+    it('no rollover: March date when current month is March → current year', () => {
+      jest.setSystemTime(new Date('2025-03-10T12:00:00Z'));
+      expect(resolveEventYear('March 17')).toBe(2025);
+    });
+
+    it('edge: October date when current month is October → current year (month >= 10 but same month)', () => {
+      jest.setSystemTime(new Date('2025-10-05T12:00:00Z'));
+      expect(resolveEventYear('October 6')).toBe(2025);
+    });
+
+    it('no rollover: January date when current month is October → current year (October excluded from year-boundary check)', () => {
+      jest.setSystemTime(new Date('2025-10-15T12:00:00Z'));
+      expect(resolveEventYear('January 6')).toBe(2025);
+    });
+
+    it('no rollover: January date when current month is September → current year', () => {
+      jest.setSystemTime(new Date('2025-09-15T12:00:00Z'));
+      expect(resolveEventYear('January 6')).toBe(2025);
     });
   });
 

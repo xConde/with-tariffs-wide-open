@@ -25,6 +25,9 @@ async function gracefulShutdown(signal: string): Promise<void> {
   isShuttingDown = true;
   log.info('Starting graceful shutdown', { signal });
 
+  // Hard-kill safety net: if cleanup hangs, force exit after 10s
+  setTimeout(() => process.exit(1), 10_000).unref();
+
   try {
     log.info('Running registered cleanup handlers');
     for (const handler of cleanupHandlers) {
@@ -54,10 +57,10 @@ async function gracefulShutdown(signal: string): Promise<void> {
     }
 
     log.info('Graceful shutdown complete');
-    process.exit(0);
+    process.exitCode = 0;
   } catch (error) {
     log.error('Error during graceful shutdown', { error: String(error) });
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
@@ -68,9 +71,11 @@ export function setupGracefulShutdown(): void {
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
+  // Node.js docs: process state is unreliable after uncaughtException.
+  // Log and exit immediately — do NOT attempt cleanup.
   process.on('uncaughtException', (error: Error) => {
     log.error('Uncaught Exception', { error: String(error) });
-    gracefulShutdown('uncaughtException');
+    process.exit(1);
   });
 
   process.on('unhandledRejection', (reason: unknown) => {
